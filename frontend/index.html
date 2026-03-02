@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adizilla Mobile OS</title>
+  <link rel="stylesheet" href="css/kernel.css">
+  <link rel="stylesheet" href="css/apps.css">
+  <link rel="stylesheet" href="css/animations.css">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="boot-screen">
+    <pre class="boot-ascii">
+╔═══════════════════════════════════════════════════════════╗
+║                                                           ║
+║     █████╗ ██████╗ ██████╗███████╗███████╗███████╗        ║
+║    ██╔══██╗██╔══██╗██╔════╝██╔════╝██╔════╝██╔════╝        ║
+║    ███████║██████╔╝██║     █████╗  ███████╗███████╗        ║
+║    ██╔══██║██╔══██╗██║     ██╔══╝  ╚════██║╚════██║        ║
+║    ██║  ██║██║  ██║╚██████╗███████╗███████║███████║        ║
+║    ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚══════╝╚══════╝╚══════╝        ║
+║                      Mobile OS                             ║
+║                                                           ║
+║         🇰🇪 Built with ❤️ in Nairobi, Kenya              ║
+║                                                           ║
+╚═══════════════════════════════════════════════════════════╝
+    </pre>
+    <div class="boot-progress">
+      <div class="boot-bar">
+        <div class="boot-fill" id="boot-fill"></div>
+      </div>
+      <div class="boot-text" id="boot-text">Initializing kernel...</div>
+    </div>
+  </div>
+
+  <div id="login-screen" class="hidden">
+    <div class="login-box">
+      <pre class="login-logo">
+   █████╗ ██████╗ ██████╗███████╗███████╗███████╗
+  ██╔══██╗██╔══██╗██╔════╝██╔════╝██╔════╝██╔════╝
+  ███████║██████╔╝██║     █████╗  ███████╗███████╗
+  ██╔══██║██╔══██╗██║     ██╔══╝  ╚════██║╚════██║
+  ██║  ██║██║  ██║╚██████╗███████╗███████║███████║
+  ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚══════╝╚══════╝╚══════╝
+      </pre>
+      <h2>Adizilla OS</h2>
+      <form id="login-form">
+        <input type="text" id="username" placeholder="Username" autocomplete="username" required>
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+        <button type="submit">Login</button>
+      </form>
+      <div class="login-hint">
+        <p>Default accounts: root/root, admin/admin, guest/guest</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="desktop" class="hidden">
+    <div id="taskbar">
+      <div class="taskbar-start">
+        <span class="start-icon">🟦</span>
+        <span class="start-text">Adizilla</span>
+      </div>
+      <div class="taskbar-apps">
+        <div class="taskbar-item active" data-app="terminal">💻 Terminal</div>
+        <div class="taskbar-item" data-app="files">📁 Files</div>
+        <div class="taskbar-item" data-app="settings">⚙️ Settings</div>
+      </div>
+      <div class="taskbar-clock" id="clock">00:00</div>
+    </div>
+
+    <div id="desktop-icons">
+      <div class="desktop-icon" data-app="terminal">
+        <div class="icon-img">💻</div>
+        <div class="icon-label">Terminal</div>
+      </div>
+      <div class="desktop-icon" data-app="files">
+        <div class="icon-img">📁</div>
+        <div class="icon-label">Files</div>
+      </div>
+      <div class="desktop-icon" data-app="settings">
+        <div class="icon-img">⚙️</div>
+        <div class="icon-label">Settings</div>
+      </div>
+      <div class="desktop-icon" data-app="browser">
+        <div class="icon-img">🌐</div>
+        <div class="icon-label">Browser</div>
+      </div>
+    </div>
+
+    <div id="windows"></div>
+  </div>
+
+  <!-- Terminal Window -->
+  <template id="terminal-template">
+    <div class="window terminal-window" data-app="terminal">
+      <div class="window-header">
+        <div class="window-title">💻 Terminal - Adizilla OS</div>
+        <div class="window-controls">
+          <span class="window-btn minimize">─</span>
+          <span class="window-btn maximize">□</span>
+          <span class="window-btn close">×</span>
+        </div>
+      </div>
+      <div class="window-content">
+        <div class="terminal" id="terminal">
+          <div class="terminal-output" id="terminal-output"></div>
+          <div class="terminal-input-line">
+            <span class="terminal-prompt" id="terminal-prompt">guest@adizilla:~$ </span>
+            <input type="text" class="terminal-input" id="terminal-input" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- File Manager Window -->
+  <template id="files-template">
+    <div class="window files-window" data-app="files">
+      <div class="window-header">
+        <div class="window-title">📁 File Manager</div>
+        <div class="window-controls">
+          <span class="window-btn minimize">─</span>
+          <span class="window-btn maximize">□</span>
+          <span class="window-btn close">×</span>
+        </div>
+      </div>
+      <div class="window-content">
+        <div class="file-manager">
+          <div class="file-toolbar">
+            <button class="file-btn" id="btn-up">⬆️ Up</button>
+            <button class="file-btn" id="btn-home">🏠 Home</button>
+            <button class="file-btn" id="btn-mkdir">➕ New Folder</button>
+          </div>
+          <div class="file-path" id="file-path">/home/root</div>
+          <div class="file-list" id="file-list"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Settings Window -->
+  <template id="settings-template">
+    <div class="window settings-window" data-app="settings">
+      <div class="window-header">
+        <div class="window-title">⚙️ Settings</div>
+        <div class="window-controls">
+          <span class="window-btn minimize">─</span>
+          <span class="window-btn maximize">□</span>
+          <span class="window-btn close">×</span>
+        </div>
+      </div>
+      <div class="window-content">
+        <div class="settings">
+          <div class="settings-section">
+            <h3>System</h3>
+            <div class="setting-item">
+              <label>Hostname</label>
+              <span id="setting-hostname">adizilla</span>
+            </div>
+            <div class="setting-item">
+              <label>Uptime</label>
+              <span id="setting-uptime">--</span>
+            </div>
+          </div>
+          <div class="settings-section">
+            <h3>Appearance</h3>
+            <div class="setting-item">
+              <label>Theme</label>
+              <select id="setting-theme">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+                <option value="matrix">Matrix</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-section">
+            <h3>User</h3>
+            <div class="setting-item">
+              <label>Current User</label>
+              <span id="setting-user">guest</span>
+            </div>
+            <button class="settings-btn" id="btn-logout">Logout</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script src="js/api.js"></script>
+  <script src="js/adz_sys.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/apps.js"></script>
+</body>
+</html>

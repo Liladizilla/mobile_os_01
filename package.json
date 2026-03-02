@@ -1,0 +1,34 @@
+{
+  "name": "adizilla-mob-os",
+  "version": "1.0.0",
+  "description": "Adizilla Mobile OS — Built by Lila, Nairobi 🇰🇪",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "kernel": "make -C kernel/",
+    "asm": "make -C asm/",
+    "build": "npm run kernel && npm run asm",
+    "build:iso": "node scripts/build_iso.js",
+    "test": "node scripts/test_runner.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "morgan": "^1.10.0",
+    "uuid": "^9.0.0",
+    "ws": "^8.14.2",
+    "compression": "^1.7.4",
+    "helmet": "^7.0.0",
+    "express-rate-limit": "^7.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "author": "Lila <lila@adizilla.dev>",
+  "license": "MIT"
+}
