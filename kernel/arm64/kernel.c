@@ -24,8 +24,10 @@ else if(equal(s,"memtest")){uart_write_external("\nPhysical page allocator self-
 else if(equal(s,"clear"))uart_write_external("\033[2J\033[H");
 else if(equal(s,"about")){uart_write_external("\nDedus is a freestanding ARM64 kernel targeting QEMU virt.");uart_write_external("\nIt is not yet installable on a retail phone. A phone port needs SoC-specific boot flow, device tree, drivers and verified recovery.\n");}
 else if(equal(s,"vectors")){
-    uint64_t base;
+    uint64_t base,current;
     __asm__ volatile("mrs %0, vbar_el1":"=r"(base));
+    __asm__ volatile("mrs %0, CurrentEL":"=r"(current));
+    uart_write_external("\nCurrentEL: "); uart_hex_external(current);
     uint64_t expected=(uint64_t)(uintptr_t)exception_vectors;
     uart_write_external("\nVBAR_EL1: "); uart_hex_external(base);
     uart_write_external("\nVector table: "); uart_hex_external(expected);
