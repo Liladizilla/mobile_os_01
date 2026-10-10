@@ -111,7 +111,7 @@ bool memory_free_page(uint64_t address){
 }
 bool memory_self_test(void){
     if(!ready)return false;
-    uint32_t before=free_count;uint64_t first=memory_alloc_page(),second=allocate_page();
+    uint32_t before=free_count;uint64_t first=memory_alloc_page(),second=memory_alloc_page();
     bool valid=first&&second&&first!=second&&!(first&(PAGE_SIZE-1u))&&!(second&(PAGE_SIZE-1u));
     bool freed_first=first?memory_free_page(first):false,freed_second=second?memory_free_page(second):false;
     return valid&&freed_first&&freed_second&&free_count==before;
