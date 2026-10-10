@@ -80,3 +80,10 @@ See [UX_PRINCIPLES.md](UX_PRINCIPLES.md). Dedus uses solid morphism: solid surfa
 The ARM64 target now configures the QEMU `virt` board's GICv2 and EL1 virtual generic timer. A dedicated IRQ vector saves and restores general-purpose registers, acknowledges the interrupt, increments a kernel tick counter, rearms the timer, and completes the GIC interrupt. The `timer` command exposes timer/GIC registers for bring-up diagnostics; `ticks` reports the delivered interrupt count. CI requires the count to advance before it uploads the ELF and raw kernel artifacts.
 
 This is not yet a scheduler clock or a phone-portable interrupt controller abstraction. Before relying on it for preemption, add exception-frame tests, timer drift/overflow handling, interrupt-controller abstraction, and tests for repeated IRQ entry/exit. The current target is specifically QEMU `virt` with GICv2.
+
+
+## Bootstrap MMU milestone (QEMU only)
+
+The kernel now builds a 4 KiB-granule TTBR0 translation table and enables the EL1 MMU, data cache and instruction cache. The first GiB is identity-mapped with Device attributes for the QEMU peripheral window; the 1-4 GiB range is identity-mapped as normal inner-shareable memory, covering the QEMU RAM and kernel image. The `mmu` command checks SCTLR_EL1 and reports the mapping policy. CI runs this command after enabling translation and continues to test the serial shell, page allocator, GICv2 timer and exception path.
+
+This is only a bootstrap map for one emulated machine. It deliberately does not claim process isolation or fine-grained permissions: the 1-4 GiB normal-memory blocks are broad 1 GiB mappings, and there is no user/kernel address-space split. The next memory milestone is to refine page tables to 2 MiB/4 KiB mappings, apply execute/read/write permissions, map MMIO regions explicitly, and integrate allocator ownership with page-table management. C code is compiled with general registers only until the kernel has a proper SIMD/FP context policy.
