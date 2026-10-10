@@ -98,12 +98,12 @@ void memory_init(uint64_t fdt){
     put(" [mem:init] allocator initialized\n");
 }
 bool memory_is_ready(void){return ready;}
-static uint64_t allocate_page(void){
+uint64_t memory_alloc_page(void){
     if(!ready)return 0;
     for(uint32_t i=0;i<pool_pages;i++)if(!is_used(i)){set_used(i,true);free_count--;return pool_start+(uint64_t)i*PAGE_SIZE;}
     return 0;
 }
-static bool release_page(uint64_t address){
+bool memory_free_page(uint64_t address){
     if(!ready||(address&(PAGE_SIZE-1u))||address<pool_start||address>=pool_end)return false;
     uint32_t i=(uint32_t)((address-pool_start)/PAGE_SIZE);
     if(!is_used(i))return false;
@@ -111,9 +111,9 @@ static bool release_page(uint64_t address){
 }
 bool memory_self_test(void){
     if(!ready)return false;
-    uint32_t before=free_count;uint64_t first=allocate_page(),second=allocate_page();
+    uint32_t before=free_count;uint64_t first=memory_alloc_page(),second=allocate_page();
     bool valid=first&&second&&first!=second&&!(first&(PAGE_SIZE-1u))&&!(second&(PAGE_SIZE-1u));
-    bool freed_first=first?release_page(first):false,freed_second=second?release_page(second):false;
+    bool freed_first=first?memory_free_page(first):false,freed_second=second?memory_free_page(second):false;
     return valid&&freed_first&&freed_second&&free_count==before;
 }
 void memory_print_info(void){
