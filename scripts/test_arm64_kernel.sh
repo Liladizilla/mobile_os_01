@@ -13,7 +13,7 @@ set +e
 status=$?
 set -e
 if [ "$status" -ne 124 ] && [ "$status" -ne 0 ]; then cat "$LOG"; echo "QEMU exited unexpectedly with status $status" >&2; exit "$status"; fi
-for expected in 'DEDUS MOBILE OS' 'Dedus Mobile OS kernel 0.3.0' 'EL1 exception vectors installed' 'FDT RAM discovery' 'Dedus physical memory report' 'Physical page allocator self-test: PASS' 'not yet installable on a retail phone' 'DEDUS KERNEL EXCEPTION' 'ESR_EL1:'; do
+for expected in 'DEDUS MOBILE OS' 'Dedus Mobile OS kernel 0.3.0' 'EL1 exception vectors installed' 'FDT RAM discovery' 'Dedus physical memory report' 'Physical page allocator self-test: PASS' 'not yet installable on a retail phone' 'Vector base check: PASS' 'DEDUS KERNEL EXCEPTION' 'ESR_EL1:'; do
   if ! grep -q "$expected" "$LOG"; then cat "$LOG"; echo "Smoke test failed: expected output not found: $expected" >&2; exit 1; fi
 done
 echo "Dedus ARM64 smoke test passed: boot, FDT RAM discovery, page allocation/free, shell and exception diagnostics."
