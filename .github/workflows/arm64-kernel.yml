@@ -1,33 +1,50 @@
-name: ARM64 kernel
-
+name: Dedus ARM64 kernel CI/CD
 on:
   push:
-    branches: [main, "feat/**"]
-    paths:
-      - "kernel/arm64/**"
-      - "scripts/test_arm64_kernel.sh"
-      - ".github/workflows/arm64-kernel.yml"
-      - "Makefile"
+    branches: [main, "feat/**", "fix/**"]
+    paths: ["kernel/arm64/**", "kernel/include/**", "scripts/test_arm64_kernel.sh", ".github/workflows/arm64-kernel.yml", "Makefile", "README.md", "docs/**", "frontend/**"]
   pull_request:
-    paths:
-      - "kernel/arm64/**"
-      - "scripts/test_arm64_kernel.sh"
-      - ".github/workflows/arm64-kernel.yml"
-      - "Makefile"
+    paths: ["kernel/arm64/**", "kernel/include/**", "scripts/test_arm64_kernel.sh", ".github/workflows/arm64-kernel.yml", "Makefile", "README.md", "docs/**", "frontend/**"]
   workflow_dispatch:
-
+permissions:
+  contents: read
+concurrency:
+  group: dedus-arm64-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  build-and-smoke-test:
+  kernel-build-and-smoke-test:
+    name: Build, boot and test kernel
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - name: Install ARM64 cross compiler and emulator
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu qemu-system-arm
-      - name: Build freestanding ARM64 kernel
+      - name: Build freestanding Dedus ARM64 kernel
         run: make -C kernel/arm64 CROSS_COMPILE=aarch64-linux-gnu-
       - name: Boot kernel and exercise serial shell
         run: |
           chmod +x scripts/test_arm64_kernel.sh
           CROSS_COMPILE=aarch64-linux-gnu- QEMU=qemu-system-aarch64 scripts/test_arm64_kernel.sh
+      - name: Deliver tested kernel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dedus-arm64-qemu-${{ github.sha }}
+          path: kernel/arm64/build/dedus.elf
+          if-no-files-found: error
+          retention-days: 14
+  prototype-quality:
+    name: Validate UX prototype scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check browser prototype JavaScript syntax
+        run: |
+          for file in frontend/js/*.js; do node --check "$file"; done
+      - name: Verify current product identity
+        run: |
+          grep -q "Dedus Mobile OS" frontend/index.html
+          ! grep -qi "Adizilla" frontend/index.html
