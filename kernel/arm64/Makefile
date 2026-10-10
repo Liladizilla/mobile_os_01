@@ -23,11 +23,14 @@ $(BUILD):
 $(BUILD)/boot.o: boot.S | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(BUILD)/vectors.o: vectors.S | $(BUILD)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(BUILD)/kernel.o: kernel.c | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(TARGET): $(BUILD)/boot.o $(BUILD)/kernel.o linker.ld
-	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD)/boot.o $(BUILD)/kernel.o -o $@
+$(TARGET): $(BUILD)/boot.o $(BUILD)/vectors.o $(BUILD)/kernel.o linker.ld
+	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD)/boot.o $(BUILD)/vectors.o $(BUILD)/kernel.o -o $@
 	@echo "Built freestanding ARM64 kernel: $(TARGET)"
 
 run: $(TARGET)

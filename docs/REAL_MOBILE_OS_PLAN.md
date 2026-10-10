@@ -4,11 +4,11 @@
 
 The existing browser UI is a useful product prototype, not a phone operating system. The older C files use hosted-library calls such as `stdio`, `stdlib`, and `calloc`; the networking implementation simulates interfaces; and the old ISO scripts write a placeholder kernel image. Those pieces must not be represented as a functioning phone kernel.
 
-The new `kernel/arm64` target is the first genuine low-level milestone: freestanding C plus AArch64 assembly, a linker script, direct PL011 UART hardware access, and an interactive serial shell. It is intended to boot under QEMU's ARM `virt` machine. It does **not** yet boot on a retail phone.
+The new `kernel/arm64` target is a genuine low-level milestone: freestanding C plus AArch64 assembly, a linker script, direct PL011 UART hardware access, an interactive serial shell, EL2-to-EL1 normalization, BSS initialization, and an EL1 exception vector table with diagnostic panic output. It is intended to boot under QEMU's ARM `virt` machine. It does **not** yet boot on a retail phone.
 
 ## Architecture
 
-- **Kernel language:** C for kernel subsystems, AArch64 assembly for entry/exception-sensitive code.
+- **Kernel language:** C for kernel subsystems, AArch64 assembly for entry and exception-sensitive code.
 - **Initial execution target:** QEMU `virt`, ARMv8-A, PL011 UART.
 - **Build:** `aarch64-none-elf-gcc` and GNU binutils.
 - **Emulation:** `qemu-system-aarch64`.
@@ -30,14 +30,14 @@ make -C kernel/arm64
 make -C kernel/arm64 run
 ```
 
-QEMU opens a serial console. Type `help`, `uname`, `features`, `clear`, or `about`.
+QEMU opens a serial console. Type `help`, `uname`, `features`, `clear`, or `about`. The `fault` command deliberately executes a BRK instruction to test exception diagnostics; the expected result is a printed syndrome/register report followed by a halt.
 
 ## Roadmap
 
-1. **Bootable ARM64 kernel (current milestone):** startup assembly, linker layout, UART output/input, simple serial shell.
-2. **Platform foundations:** exception vectors, timer interrupts, GIC handling, memory map discovery, page allocator, MMU and isolation.
-3. **Kernel services:** preemptive scheduling, process/thread model, syscalls, virtual filesystem, block storage driver.
-4. **Mobile platform:** device-tree parsing, display pipeline, input/touch, battery/charging, suspend/resume, audio, Wi-Fi, modem and sensors.
+1. **Bootable ARM64 kernel:** startup assembly, linker layout, UART input/output, serial shell, BSS initialization and exception diagnostics.
+2. **Memory and interrupt foundations:** parse the QEMU device tree, build a physical memory map, implement a page-frame allocator, set up the generic timer and GICv2/v3, then enable controlled interrupts. Add MMU mappings and isolation only after memory ownership is tested.
+3. **Kernel services:** preemptive scheduling, process/thread model, syscalls, virtual filesystem and block storage driver.
+4. **Mobile platform:** device-tree parsing for a chosen device, display pipeline, input/touch, battery/charging, suspend/resume, audio, Wi-Fi, modem and sensors.
 5. **User environment:** secure init/service manager, permissions, app packaging/runtime, notifications, settings, launcher, file manager, accessibility, theme and visual effects.
 6. **Retain prototype features as services/apps:** terminal, notes, calculator, calendar, task manager, weather/news/crypto clients, AI assistant, telemetry dashboards, multi-user sessions and audit tools. Network-backed/API features belong in user-space apps, not the kernel.
 7. **Security:** verified boot integration, memory/process isolation, capability/permission model, secure update path, encryption using vetted libraries, sandboxing and audit logging. Never claim a firewall, intrusion detection, 2FA, encryption, or malware scanner is implemented until it is tested and real.
