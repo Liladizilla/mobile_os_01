@@ -1,89 +1,69 @@
 # Dedus Mobile OS
 
-Dedus is being rebuilt as a **real low-level ARM64 operating system project**. The repository also contains an older browser-based UI prototype. The prototype is useful for exploring the user experience, but it is not itself a phone OS and its simulated hardware/security features must not be mistaken for kernel functionality.
+[![ARM64 kernel CI](https://github.com/Liladizilla/mobile_os_01/actions/workflows/arm64-kernel.yml/badge.svg?branch=feat%2Faarch64-real-kernel)](https://github.com/Liladizilla/mobile_os_01/actions/workflows/arm64-kernel.yml)
 
-## Current reality
+Dedus is a low-level ARM64 operating-system research project written in freestanding C and AArch64 assembly. The repository also contains an older browser-based UI prototype. That prototype is for UX exploration only; it is not a native GUI running on the kernel.
+
+## Current status
 
 | Component | Status |
 |---|---|
-| Freestanding ARM64 kernel | Initial implementation in `kernel/arm64/` |
-| AArch64 assembly entry point and linker layout | Implemented for the QEMU `virt` board |
-| PL011 UART console | Implemented |
-| Interactive serial command loop | Implemented |\n| FDT RAM discovery and 4 KiB page allocator | Implemented for QEMU `virt`; covered by `memtest` |\n| EL1 exception diagnostics | Implemented; deliberate `fault` command exercises the handler |
-| QEMU boot / physical phone boot | QEMU target is the first test target; retail phone boot is **not implemented or verified** |
-| MMU, timer/GIC interrupts, scheduler, userspace, storage, touchscreen, GPU, Wi-Fi, modem, camera, audio, power management | Roadmap |
-| Browser UI and built-in app mockups | Legacy prototype, not kernel services |
+| ARM64 startup and EL2-to-EL1 transition | Implemented for QEMU `virt` |
+| PL011 UART and interactive serial shell | Implemented |
+| Flattened device-tree RAM discovery | Implemented for QEMU `virt` |
+| Bitmap-backed 4 KiB physical page allocator | Implemented; `memtest` verifies allocation and release |
+| EL1 exception vectors and panic diagnostics | Implemented and smoke-tested |
+| Generic timer + GICv2 interrupt path | In development; CI verifies timer IRQs before this milestone is considered complete |
+| MMU, scheduler, user space, filesystem, native graphics/input | Not implemented yet |
+| Retail-phone boot support | Not implemented or verified |
 
-## Build the real ARM64 kernel
+## Build and run
 
-Install an AArch64 bare-metal GCC/binutils toolchain and QEMU system emulator. On Fedora, package names can vary by release; verify availability before installing. Then run:
+You need an AArch64 cross-compiler/binutils and QEMU system emulation. The CI environment uses `aarch64-linux-gnu-gcc` and `qemu-system-aarch64`.
 
 ```sh
 make arm64
 make run-arm64
 ```
 
-Or:
+Or build directly:
 
 ```sh
-make -C kernel/arm64
-make -C kernel/arm64 run
+make -C kernel/arm64 CROSS_COMPILE=aarch64-linux-gnu- all
 ```
 
-QEMU opens a serial console. Available commands: `help`, `uname`, `features`, `meminfo`, `memtest`, `clear`, `about`, and `fault`.
-
-The first kernel is freestanding C plus AArch64 assembly. It talks directly to the QEMU PL011 UART registers; it does not use Node.js, a browser, or hosted C libraries in the kernel. This is a small, testable foundation, not a finished mobile OS.
-
-## Why QEMU first?
-
-ARM64 is an instruction-set family, not a guarantee that one image boots on every phone. A retail phone needs a device-specific boot chain, SoC configuration, device tree, display/input/storage/network/power drivers, and a recovery plan. The intended physical target must be selected and investigated before any image is flashed. No existing Android partition should be overwritten with an unverified build.
-
-## Roadmap
-
-### Kernel and hardware foundations
-- [x] AArch64 startup assembly and linker script
-- [x] PL011 serial input/output and basic command shell on QEMU `virt`
-- [ ] Exception vectors, timer interrupts and interrupt controller
-- [ ] RAM map discovery, page allocator, MMU and process isolation
-- [ ] Preemptive scheduler, processes/threads and system calls
-- [ ] Virtual filesystem, block storage and persistent settings
-- [ ] Device-tree parsing and a real device-specific boot target
-
-### Mobile platform
-- [ ] Display/GPU composition, touchscreen and gestures
-- [ ] Battery, charging, thermal limits, suspend/resume and power management
-- [ ] Wi-Fi, cellular modem, Bluetooth, audio, camera, GPS and sensors
-- [ ] Secure boot/update integration and rollback/recovery
-- [ ] User-space service manager, permission model and application runtime
-
-### User experience and prototype feature carry-over
-These are product goals to implement on top of working kernel and user-space services, not claims that they already work in the kernel:
-- Launcher/home screen, task switcher, notifications and lock screen
-- File manager, settings, terminal, browser, text editor, calculator
-- Themes, accessibility, responsive motion, blur/shadows where hardware supports them
-- User accounts, permissions, audit logs, sandboxing and secure app installation
-- CPU/memory/storage/network/battery monitoring backed by actual device telemetry
-- Notes, tasks, calendar, timers and alarms
-- Weather, news, crypto prices, dictionary, currency conversion and NASA content as user-space network apps
-- AI assistant with explicit network/credential permissions
-- GitHub developer tools and safe terminal workflows
-- Optional Swahili/localization and region-specific service integrations where supported
-
-Security items such as encryption, firewalling, intrusion detection, 2FA, vulnerability scanning and malware scanning must use real, reviewed implementations and be independently tested before being advertised as available.
-
-## Repository layout
-
-- `kernel/arm64/`: new freestanding ARM64 kernel target
-- `kernel/` and `asm/`: older experimental code; not the new ARM64 kernel
-- `frontend/` and `backend/`: browser prototype and its supporting server
-- `scripts/`, `iso/`, and the checked-in legacy ISO: older experimental build path. Do not treat it as a verified phone image.
-- `docs/REAL_MOBILE_OS_PLAN.md`: architecture notes, honest status and milestone plan\n- `docs/UX_PRINCIPLES.md`: solid-morphism mobile UX direction and accessibility/performance constraints
-
-## Contribution rule
-
-Keep kernel code freestanding and low-level. UI and API-backed features belong in user space after the kernel provides the required services. Mark features as implemented only after they are exercised in emulation or on supported hardware.
-
+The kernel targets the QEMU `virt` board with a GICv2 interrupt controller and a PL011 serial console. Shell commands include `help`, `uname`, `features`, `meminfo`, `memtest`, `timer`, `ticks`, `vectors`, `about`, and `fault`.
 
 ## CI/CD
 
-GitHub Actions builds the freestanding kernel, boots it under QEMU, tests memory discovery/allocation and exception diagnostics, then uploads the tested ELF as a short-lived workflow artifact. A separate job checks browser-prototype JavaScript syntax. This is tested artifact delivery, not a phone deployment; no retail-phone image is produced or flashed.
+GitHub Actions builds the freestanding kernel, boots it in QEMU, checks RAM discovery and allocator behavior, verifies timer interrupt delivery and exception diagnostics, validates the browser prototype's JavaScript and Dedus branding, and uploads the built kernel artifacts after the smoke test succeeds.
+
+## UI/UX direction
+
+Dedus follows **solid morphism**: solid tactile surfaces, crisp shadow outlines, restrained depth, and optional blur rather than glass effects everywhere. The mobile experience is designed around reachable controls, clear Back/Home/Recents behavior, accessible touch targets, scalable text, reduced motion, and graceful performance degradation. Read [the UX principles](docs/UX_PRINCIPLES.md).
+
+The browser prototype must not present simulated hardware telemetry, permissions, encryption, or security features as implemented kernel capabilities.
+
+## Roadmap
+
+- [x] ARM64 entry, linker layout and serial shell
+- [x] FDT-based RAM discovery and initial physical page allocator
+- [x] EL1 exception vector table and panic diagnostics
+- [ ] Finish and validate GICv2 timer interrupts
+- [ ] MMU, memory protection and kernel/user boundaries
+- [ ] Scheduler, threads, context switching and system calls
+- [ ] Virtual filesystem and block storage
+- [ ] Native display/input stack and compositor
+- [ ] Select and investigate a specific phone/SoC boot chain and drivers
+
+## Why QEMU first?
+
+ARM64 is an instruction-set family, not a promise that one image boots on every phone. A retail port needs a device-specific boot chain, SoC configuration, device tree, display/input/storage/network/power drivers, and a tested recovery path. No retail-phone image is provided. Do not flash an unverified kernel over an existing Android installation.
+
+## Project and design documents
+
+- [Real mobile OS plan](docs/REAL_MOBILE_OS_PLAN.md)
+- [UI/UX principles](docs/UX_PRINCIPLES.md)
+- [Draft implementation PR](https://github.com/Liladizilla/mobile_os_01/pull/1)
+- [GitHub Actions](https://github.com/Liladizilla/mobile_os_01/actions)
+- [Portfolio project registry](https://github.com/Liladizilla/portfolio/blob/main/data/project-links.json)
