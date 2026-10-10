@@ -4,15 +4,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 QEMU="${QEMU:-qemu-system-aarch64}"
 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}"
-BUILD_DIR="$ROOT/kernel/arm64/build"
-IMAGE="$BUILD_DIR/adizilla.elf"
+IMAGE="$ROOT/kernel/arm64/build/adizilla.elf"
 LOG="$(mktemp)"
 trap 'rm -f "$LOG"' EXIT
 
-make -C "$ROOT/kernel/arm64" CROSS_COMPILE="$CROSS_COMPILE" "$IMAGE" >/dev/null
+make -C "$ROOT/kernel/arm64" CROSS_COMPILE="$CROSS_COMPILE" all >/dev/null
 command -v "$QEMU" >/dev/null || { echo "Missing QEMU executable: $QEMU" >&2; exit 1; }
 
-# QEMU is expected to keep running in the interactive shell, so timeout is normal.
+# QEMU should remain in the interactive shell; timeout is therefore normal.
 set +e
 printf 'help\nuname\nfeatures\nabout\n' | timeout 8s "$QEMU" \
   -machine virt -cpu cortex-a53 -m 256M -nographic -monitor none -kernel "$IMAGE" >"$LOG" 2>&1
