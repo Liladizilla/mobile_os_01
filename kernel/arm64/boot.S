@@ -1,9 +1,10 @@
-/* Dedus ARM64 entry: preserve FDT, normalize EL2, clear BSS, install vectors. */
+/* Dedus ARM64 entry: preserve the boot FDT in .data, normalize EL2, clear BSS. */
 .section .text.boot, "ax"
 .global _start
 .type _start, %function
 _start:
-    mov x19, x0
+    ldr x9, =boot_fdt_pointer
+    str x0, [x9]
     msr daifset, #0xf
     mrs x0, CurrentEL
     cmp x0, #0x8
@@ -32,7 +33,8 @@ _start:
     adr x0, exception_vectors
     msr vbar_el1, x0
     isb
-    mov x0, x19
+    ldr x9, =boot_fdt_pointer
+    ldr x0, [x9]
     bl kernel_main
 4:
     wfe
@@ -45,3 +47,8 @@ __stack_bottom:
     .skip 16384
 .global __stack_top
 __stack_top:
+.section .data.boot, "aw"
+.align 3
+.global boot_fdt_pointer
+boot_fdt_pointer:
+    .quad 0
