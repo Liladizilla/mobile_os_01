@@ -1,6 +1,6 @@
-# Adizilla Mobile OS
+# Dedus Mobile OS
 
-Adizilla is being rebuilt as a **real low-level ARM64 operating system project**. The repository also contains an older browser-based UI prototype. The prototype is useful for exploring the user experience, but it is not itself a phone OS and its simulated hardware/security features must not be mistaken for kernel functionality.
+Dedus is being rebuilt as a **real low-level ARM64 operating system project**. The repository also contains an older browser-based UI prototype. The prototype is useful for exploring the user experience, but it is not itself a phone OS and its simulated hardware/security features must not be mistaken for kernel functionality.
 
 ## Current reality
 
@@ -30,7 +30,7 @@ make -C kernel/arm64
 make -C kernel/arm64 run
 ```
 
-QEMU opens a serial console. Available commands: `help`, `uname`, `features`, `clear`, and `about`.
+QEMU opens a serial console. Available commands: `help`, `uname`, `features`, `meminfo`, `memtest`, `clear`, `about`, and `fault`.
 
 The first kernel is freestanding C plus AArch64 assembly. It talks directly to the QEMU PL011 UART registers; it does not use Node.js, a browser, or hosted C libraries in the kernel. This is a small, testable foundation, not a finished mobile OS.
 
@@ -82,3 +82,8 @@ Security items such as encryption, firewalling, intrusion detection, 2FA, vulner
 ## Contribution rule
 
 Keep kernel code freestanding and low-level. UI and API-backed features belong in user space after the kernel provides the required services. Mark features as implemented only after they are exercised in emulation or on supported hardware.
+
+
+## CI/CD
+
+GitHub Actions builds the freestanding kernel, boots it under QEMU, tests memory discovery/allocation and exception diagnostics, then uploads the tested ELF as a short-lived workflow artifact. A separate job checks browser-prototype JavaScript syntax. This is tested artifact delivery, not a phone deployment; no retail-phone image is produced or flashed.
