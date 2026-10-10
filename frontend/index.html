@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Adizilla Mobile OS</title>
+  <title>Dedus Mobile OS | UX Prototype</title>
   <link rel="stylesheet" href="css/kernel.css">
   <link rel="stylesheet" href="css/apps.css">
   <link rel="stylesheet" href="css/animations.css">
@@ -13,46 +13,30 @@
   <div id="boot-screen">
     <pre class="boot-ascii">
 ╔═══════════════════════════════════════════════════════════╗
+║                     D E D U S                             ║
+║             MOBILE OPERATING SYSTEM                       ║
 ║                                                           ║
-║     █████╗ ██████╗ ██████╗███████╗███████╗███████╗        ║
-║    ██╔══██╗██╔══██╗██╔════╝██╔════╝██╔════╝██╔════╝        ║
-║    ███████║██████╔╝██║     █████╗  ███████╗███████╗        ║
-║    ██╔══██║██╔══██╗██║     ██╔══╝  ╚════██║╚════██║        ║
-║    ██║  ██║██║  ██║╚██████╗███████╗███████║███████║        ║
-║    ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚══════╝╚══════╝╚══════╝        ║
-║                      Mobile OS                             ║
-║                                                           ║
-║         🇰🇪 Built with ❤️ in Nairobi, Kenya              ║
-║                                                           ║
+║             ARM64 kernel research build                   ║
 ╚═══════════════════════════════════════════════════════════╝
-    </pre>
+    
     <div class="boot-progress">
       <div class="boot-bar">
         <div class="boot-fill" id="boot-fill"></div>
       </div>
-      <div class="boot-text" id="boot-text">Initializing kernel...</div>
+      <div class="boot-text" id="boot-text">Loading UX prototype...</div>
     </div>
   </div>
 
   <div id="login-screen" class="hidden">
     <div class="login-box">
-      <pre class="login-logo">
-   █████╗ ██████╗ ██████╗███████╗███████╗███████╗
-  ██╔══██╗██╔══██╗██╔════╝██╔════╝██╔════╝██╔════╝
-  ███████║██████╔╝██║     █████╗  ███████╗███████╗
-  ██╔══██║██╔══██╗██║     ██╔══╝  ╚════██║╚════██║
-  ██║  ██║██║  ██║╚██████╗███████╗███████║███████║
-  ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚══════╝╚══════╝╚══════╝
-      </pre>
-      <h2>Adizilla OS</h2>
+      <pre class="login-logo">D E D U S</pre>
+      <h2>Dedus OS</h2>
       <form id="login-form">
         <input type="text" id="username" placeholder="Username" autocomplete="username" required>
         <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
         <button type="submit">Login</button>
       </form>
-      <div class="login-hint">
-        <p>Default accounts: root/root, admin/admin, guest/guest</p>
-      </div>
+      <div class="login-hint"><p>UX prototype only. Login is not connected to the kernel or a secure authentication service.</p></div>
     </div>
   </div>
 
@@ -60,7 +44,7 @@
     <div id="taskbar">
       <div class="taskbar-start">
         <span class="start-icon">🟦</span>
-        <span class="start-text">Adizilla</span>
+        <span class="start-text">Dedus</span>
       </div>
       <div class="taskbar-apps">
         <div class="taskbar-item active" data-app="terminal">💻 Terminal</div>
@@ -96,7 +80,7 @@
   <template id="terminal-template">
     <div class="window terminal-window" data-app="terminal">
       <div class="window-header">
-        <div class="window-title">💻 Terminal - Adizilla OS</div>
+        <div class="window-title">💻 Terminal - Dedus OS</div>
         <div class="window-controls">
           <span class="window-btn minimize">─</span>
           <span class="window-btn maximize">□</span>
