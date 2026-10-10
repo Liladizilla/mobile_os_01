@@ -32,7 +32,7 @@ else if(equal(s,"vectors")){
     uart_write_external("\nVector base check: ");
     uart_write_external((base==expected&&!(base&0x7ffu))?"PASS\n":"FAIL\n");
 }
-else if(equal(s,"fault")){uart_write_external("\nTriggering intentional BRK exception; panic diagnostics should follow.\n");__asm__ volatile("brk #0");}
+else if(equal(s,"fault")){uart_write_external("\nTriggering intentional SVC exception; panic diagnostics should follow.\n");__asm__ volatile("svc #0");}
 else if(*s){uart_write_external("\nUnknown command: ");uart_write_external(s);uart_write_external("\nType 'help' for commands.\n");}
 }
 __attribute__((noreturn)) void exception_handler(uint64_t vector,uint64_t esr,uint64_t elr,uint64_t far){uart_write_external("\n\n*** DEDUS KERNEL EXCEPTION ***\nVector slot: ");uart_hex_external(vector);uart_write_external("\nESR_EL1: ");uart_hex_external(esr);uart_write_external("\nELR_EL1: ");uart_hex_external(elr);uart_write_external("\nFAR_EL1: ");uart_hex_external(far);uart_write_external("\nKernel halted to avoid unsafe exception return.\n");for(;;)__asm__ volatile("wfe");}
