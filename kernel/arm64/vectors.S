@@ -148,7 +148,8 @@ enter_user:
     mov x20, x1
     msr sp_el0, x20
     msr elr_el1, x19
-    msr spsr_el1, xzr
+    mov x9, #0x80
+    msr spsr_el1, x9
     isb
     eret
 .global user_returned
