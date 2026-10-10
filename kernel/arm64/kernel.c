@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "memory.h"
+#include "vm.h"
 #define UART0_BASE 0x09000000UL
 #define UART_DR (*(volatile uint32_t *)(UART0_BASE + 0x00))
 #define UART_FR (*(volatile uint32_t *)(UART0_BASE + 0x18))
@@ -95,6 +96,8 @@ static void mmu_init(void){
     isb();
     mmu_ready=true;
 }
+uint64_t mmu_kernel_root_address(void){return (uint64_t)(uintptr_t)l1_table;}
+void mmu_switch_root(uint64_t root_address){dsb_sy();__asm__ volatile("msr ttbr0_el1, %0"::"r"(root_address):"memory");dsb_sy();__asm__ volatile("tlbi vmalle1" ::: "memory");dsb_sy();isb();}
 static void timer_arm(void){__asm__ volatile("msr cntv_tval_el0, %0"::"r"(timer_reload));__asm__ volatile("msr cntv_ctl_el0, %0"::"r"((uint64_t)1));isb();}
 static void timer_init(void){
     uint64_t frequency;
@@ -125,9 +128,9 @@ static void help(void){uart_write_external("\nDedus kernel commands:\n  help    
 static void command(const char*s){
 if(equal(s,"help"))help();
 else if(equal(s,"uname"))uart_write_external("\nDedus Mobile OS kernel 0.4.0 (aarch64 / ARMv8-A)\n");
-else if(equal(s,"features")){uart_write_external("\nImplemented: AArch64 entry, EL2-to-EL1 normalization, BSS init, aligned EL1 exception vectors, MMU identity mapping and cache enablement,");uart_write_external("\nPL011 UART, FDT RAM discovery, 4 KiB physical page allocator, GICv2 virtual timer IRQ, shell and panic diagnostics.\n");uart_write_external("Not implemented: MMU, scheduler, userspace, storage, display/touch, GPU, modem, Wi-Fi, audio, camera or phone-specific power management.\n");}
+else if(equal(s,"features")){uart_write_external("\nImplemented: AArch64 entry, EL2-to-EL1 normalization, BSS init, aligned EL1 exception vectors, MMU identity mapping and cache enablement,");uart_write_external("\nPL011 UART, FDT RAM discovery, 4 KiB physical page allocator, MMU page permissions, TTBR0 address-space test, GICv2 virtual timer IRQ, shell and panic diagnostics.\n");uart_write_external("Not implemented: MMU, scheduler, userspace, storage, display/touch, GPU, modem, Wi-Fi, audio, camera or phone-specific power management.\n");}
 else if(equal(s,"meminfo"))memory_print_info();
-else if(equal(s,"memtest")){uart_write_external("\nPhysical page allocator self-test: ");uart_write_external(memory_self_test()?"PASS. Two distinct 4 KiB pages allocated and released; free-page count restored.\n":"FAIL. Check FDT RAM data and allocator initialization.\n");}
+else if(equal(s,"memtest")){uart_write_external("\nPhysical page allocator self-test: ");uart_write_external(memory_self_test()?"PASS. Two distinct 4 KiB pages allocated and released; free-page count restored.\n":"FAIL. Check FDT RAM data and allocator initialization.\n");}\nelse if(equal(s,"vmtest")){uart_write_external("\nVM address-space self-test: ");uart_write_external(vm_self_test()?"PASS. Separate TTBR0 root mapped a user RW+XN page; data round-trip passed and pages were released.\n":"FAIL. Address-space creation, mapping, or cleanup failed.\n");}
 else if(equal(s,"ticks")){uart_write_external("\nTimer IRQ count: ");uart_hex_external(timer_ticks);uart_write_external(timer_ready?" (timer enabled)\n":" (timer not initialized)\n");}
 else if(equal(s,"mmu")){uint64_t sctlr;__asm__ volatile("mrs %0, sctlr_el1":"=r"(sctlr));uart_write_external("\nMMU status: ");uart_write_external((sctlr&1u)?"enabled":"disabled");uart_write_external("\nSCTLR_EL1: ");uart_hex_external(sctlr);uart_write_external(mmu_ready?"\nIdentity map: 0-1 GiB device memory; 1-4 GiB normal memory; kernel text/vector RO+X, rodata RO+XN, data RW+XN\n":"\nIdentity map not initialized\n");}
 else if(equal(s,"timer")){uint64_t ctl,tval,daif,freq;__asm__ volatile("mrs %0, cntv_ctl_el0":"=r"(ctl));__asm__ volatile("mrs %0, cntv_tval_el0":"=r"(tval));__asm__ volatile("mrs %0, daif":"=r"(daif));__asm__ volatile("mrs %0, cntfrq_el0":"=r"(freq));uart_write_external("\nGeneric virtual timer / GICv2 status: ");uart_write_external(timer_ready?"initialized; expected 10 IRQs/second\n":"NOT INITIALIZED\n");uart_write_external("CNTFRQ_EL0: ");uart_hex_external(freq);uart_write_external("\nCNTV_CTL_EL0: ");uart_hex_external(ctl);uart_write_external("\nCNTV_TVAL_EL0: ");uart_hex_external(tval);uart_write_external("\nDAIF: ");uart_hex_external(daif);uart_write_external("\nGICD_CTLR: ");uart_hex_external(GICD_CTLR);uart_write_external("\nGICC_CTLR: ");uart_hex_external(GICC_CTLR);uart_write_external("\nGICD_IGROUPR0: ");uart_hex_external(GICD_IGROUPR0);uart_write_external("\nGICD_ISENABLER0: ");uart_hex_external(GICD_ISENABLER0);uart_write_external("\n");}
