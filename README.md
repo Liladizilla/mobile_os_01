@@ -14,7 +14,7 @@ Dedus is a low-level ARM64 operating-system research project written in freestan
 | Bitmap-backed 4 KiB physical page allocator | Implemented; `memtest` verifies allocation and release |
 | EL1 exception vectors and panic diagnostics | Implemented and smoke-tested |
 | Generic virtual timer + GICv2 IRQ path | Implemented and CI-tested; `ticks` confirms interrupts are delivered |
-| EL1 MMU identity map and cache enablement | Implemented and CI-tested on QEMU; no process isolation or page permissions yet |
+| EL1 MMU and cache enablement | Implemented and CI-tested on QEMU; 4 KiB kernel pages enforce RO executable text, RO+XN rodata and RW+XN data |\n| Process address spaces and user/kernel isolation | Not implemented yet |
 | Scheduler, user space, filesystem, native graphics/input | Not implemented yet |
 | Retail-phone boot support | Not implemented or verified |
 
@@ -33,7 +33,7 @@ Or build directly:
 make -C kernel/arm64 CROSS_COMPILE=aarch64-linux-gnu- all
 ```
 
-The kernel targets the QEMU `virt` board with a GICv2 interrupt controller and a PL011 serial console. Shell commands include `help`, `uname`, `features`, `meminfo`, `memtest`, `timer`, `ticks`, `vectors`, `about`, and `fault`.
+The kernel targets the QEMU `virt` board with a GICv2 interrupt controller and a PL011 serial console. Shell commands include `help`, `uname`, `features`, `meminfo`, `memtest`, `mmu`, `timer`, `ticks`, `vectors`, `about`, `fault`, and `protectfault`.
 
 ## CI/CD
 
@@ -51,7 +51,7 @@ The browser prototype must not present simulated hardware telemetry, permissions
 - [x] FDT-based RAM discovery and initial physical page allocator
 - [x] EL1 exception vector table and panic diagnostics
 - [x] Generic virtual timer IRQ delivery through GICv2 (QEMU `virt`)
-- [ ] Page-level permissions, allocator integration, memory protection and kernel/user boundaries
+- [ ] Process address spaces, allocator integration, and user/kernel isolation
 - [ ] Scheduler, threads, context switching and system calls
 - [ ] Virtual filesystem and block storage
 - [ ] Native display/input stack and compositor
