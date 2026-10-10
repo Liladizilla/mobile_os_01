@@ -89,3 +89,10 @@ The kernel now builds a 4 KiB-granule TTBR0 translation table and enables the EL
 The QEMU RAM window is now split into 2 MiB blocks, with a 4 KiB page table for the kernel image. Kernel text and exception vectors are read-only and executable; rodata is read-only and execute-never; data/BSS and stack are read-write and execute-never. Other RAM blocks remain broad identity mappings, and the low peripheral window uses Device attributes. A second QEMU boot runs `protectfault`, attempts to write the read-only text page, and requires a data-abort diagnostic at the expected kernel address. CI must pass both the regular shell/timer tests and this protection test before uploading artifacts.
 
 This remains a bootstrap mapping for QEMU `virt`, not process isolation. The next memory milestone is to split more RAM into fine-grained pages, add per-process address spaces and explicit user/kernel permissions, and integrate allocator ownership with page-table management. C code is compiled with general registers only until the kernel has a proper SIMD/FP context policy.
+
+
+## Single-page TTBR0 address-space milestone
+
+The `vmtest` command allocates four physical pages for a separate TTBR0 root, an L2 table, an L3 table and a data page. It copies the shared kernel identity mappings into the new root, maps one page at a high user virtual address with EL0 read/write access and both execute-never bits, switches TTBR0, performs a data round-trip, restores the kernel root, and releases the allocated pages. CI also checks the descriptor AP/XN bits and separately verifies that writing to kernel text triggers a data abort.
+
+This proves a minimal page-table/address-space mapping path, not a complete process model. The test accesses the user mapping while executing at EL1; EL0 instruction execution, exception entry/return, syscalls, process isolation policies and a scheduler remain future work. Shared kernel mappings are still a bootstrap design for one CPU under QEMU `virt`.
