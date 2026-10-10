@@ -1,280 +1,84 @@
-# Adizilla Mobile OS 🇰🇪
+# Adizilla Mobile OS
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Version-1.0.0-blue.svg" alt="Version">
-  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
-  <img src="https://img.shields.io/badge/Built-in-Nairobi-red.svg" alt="Built in Nairobi">
-  <img src="https://img.shields.io/badge/Platforms-Web%20%7C%20ISO-purple.svg" alt="Platforms">
-</p>
+Adizilla is being rebuilt as a **real low-level ARM64 operating system project**. The repository also contains an older browser-based UI prototype. The prototype is useful for exploring the user experience, but it is not itself a phone OS and its simulated hardware/security features must not be mistaken for kernel functionality.
 
-<p align="center">
-  <strong>A revolutionary web-based mobile operating system built with ❤️ in Nairobi, Kenya</strong>
-</p>
+## Current reality
 
----
+| Component | Status |
+|---|---|
+| Freestanding ARM64 kernel | Initial implementation in `kernel/arm64/` |
+| AArch64 assembly entry point and linker layout | Implemented for the QEMU `virt` board |
+| PL011 UART console | Implemented |
+| Interactive serial command loop | Implemented |
+| QEMU boot / physical phone boot | QEMU target is the first test target; retail phone boot is **not implemented or verified** |
+| MMU, real scheduler, userspace, storage, touchscreen, GPU, Wi-Fi, modem, camera, audio, power management | Roadmap |
+| Browser UI and built-in app mockups | Legacy prototype, not kernel services |
 
-## 📱 What is Adizilla OS?
+## Build the real ARM64 kernel
 
-Adizilla is a **full-featured mobile operating system** that runs entirely in your phone, web, USB drive and your computer. It provides a complete desktop experience with window management, terminal, file system, and more. Additionally, it can be compiled into a **bootable ISO** to run on real hardware or virtual machines.
+Install an AArch64 bare-metal GCC/binutils toolchain and QEMU system emulator. On Fedora, package names can vary by release; verify availability before installing. Then run:
 
----
-
-## ✨ Features
-
-### 🖥️ Desktop Environment
-- **Window Management** - Drag, resize, minimize, maximize, close windows
-- **Taskbar** - Application launcher, system tray, clock
-- **Desktop Icons** - Quick access to apps
-- **Multiple Themes** - Dark, Light, Matrix-style
-- **Boot Animation** - Animated ASCII art boot sequence
-
-### 📦 Built-in Applications
-
-| App | Description |
-|-----|-------------|
-| **Terminal** | Full-featured command-line with history, autocomplete, aliases |
-| **File Manager** | Virtual file system with create, read, write, delete operations |
-| **Settings** | System configuration, theme switching, user management |
-| **Browser** | Web browser within the OS |
-| **Notepad** | Text editor |
-| **Calculator** | Basic and scientific calculator |
-| **Weather** | Real-time weather via OpenWeatherMap API |
-| **Crypto Prices** | Live cryptocurrency prices via CoinGecko API |
-| **News** | Latest headlines via News API |
-| **AI Assistant** | Claude-powered AI terminal assistant |
-
-### 🔧 Core OS Features
-
-#### Process Management
-- Process scheduler (run multiple tasks simultaneously)
-- Process kill/suspend/resume commands
-- CPU & memory usage per process
-- Background jobs (& operator like real Linux)
-
-#### File System
-- Virtual file system (create, read, write, delete files)
-- Directory tree navigation (cd, ls, mkdir, rm)
-- File permissions system (read/write/execute)
-- Trash/recycle bin
-
-#### User System
-- Multi-user support with login/logout
-- User roles (root, admin, guest)
-- Password hashing and authentication
-- Session management
-
-#### Networking Layer
-- Ping command
-- Network status monitor
-- Port scanner
-- SSH-like terminal connections between nodes
-
-### 🔐 Security Features
-
-- Firewall module — allow/block connections
-- Intrusion detection — alert when unusual activity detected
-- Encryption layer — encrypt files within the OS
-- Audit log — track every command with timestamps
-- Sandbox mode — run untrusted processes in isolation
-- 2FA login — TOTP-based authentication
-- Vulnerability scanner
-
-### 🌐 APIs Integrated
-
-| API | Feature |
-|-----|---------|
-| OpenWeatherMap | Weather command |
-| NewsAPI | news command - headlines |
-| GitHub API | git status, push/pull |
-| CoinGecko | crypto prices |
-| IP-API | myip - location & network |
-| Shodan API | Network intelligence |
-| HaveIBeenPwned | Check breached emails |
-| VirusTotal | Scan files for malware |
-| Anthropic API (Claude) | AI assistant |
-| NASA API | Astronomy Picture of the Day |
-| Dictionary API | define <word> command |
-| Exchange Rate API | Currency conversion |
-
-### 🏞️ Kenya-Specific Features (Unique!)
-
-- 🇰🇪 **M-Pesa API** - Check balance, send money (Kenya-specific)
-- 🗣️ **Swahili Support** - First OS with Swahili commands!
-- 📱 **Safaricom API** - Data balance checker
-
-### 📊 Dashboard & Monitoring
-
-- Real-time CPU, RAM, disk usage graphs
-- Network traffic monitor
-- Node health dashboard
-- System uptime tracker
-- Battery/power monitor
-
-### 📅 Productivity Tools
-
-- **todo** - Task manager in terminal
-- **note** - Quick notes saved to virtual filesystem
-- **timer** and **alarm** commands
-- **calc** - Calculator
-- **calendar** - Calendar command
-
----
-
-## 🚀 Getting Started
-
-### Web Version (Run in Browser)
-
-```
-bash
-# Install dependencies
-npm install
-
-# Start the server
-npm start
-
-# Open in browser
-# http://localhost:3000
+```sh
+make arm64
+make run-arm64
 ```
 
-### Bootable ISO
+Or:
 
-```
-bash
-# Build the ISO
-npm run build:iso
-
-# Test with QEMU
-qemu-system-x86_64 -cdrom dist/Adizilla-OS-1.0.0.iso
-
-# Or burn to USB (Linux)
-sudo dd if=dist/Adizilla-OS-1.0.0.iso of=/dev/sdX bs=4M status=progress
+```sh
+make -C kernel/arm64
+make -C kernel/arm64 run
 ```
 
----
+QEMU opens a serial console. Available commands: `help`, `uname`, `features`, `clear`, and `about`.
 
-## 🏗️ Project Structure
+The first kernel is freestanding C plus AArch64 assembly. It talks directly to the QEMU PL011 UART registers; it does not use Node.js, a browser, or hosted C libraries in the kernel. This is a small, testable foundation, not a finished mobile OS.
 
-```
-adizilla-mob-os/
-├── asm/                    # Assembly files (boot, syscalls, interrupts)
-│   ├── boot.asm           # Boot sector code
-│   ├── syscall.asm        # System call handlers
-│   └── interrupt.asm      # Interrupt handlers
-├── backend/               # Express.js backend server
-│   ├── server.js          # Main server file
-│   ├── middleware/       # Auth, logging middleware
-│   ├── routes/           # API routes
-│   └── utils/            # Helper functions
-├── frontend/              # Web frontend
-│   ├── index.html        # Main HTML
-│   ├── css/              # Stylesheets
-│   └── js/               # JavaScript files
-├── kernel/               # C kernel code
-│   ├── adz_core.c       # Core kernel
-│   ├── adz_mem.c        # Memory management
-│   ├── adz_proc.c       # Process management
-│   ├── adz_net.c        # Network stack
-│   └── include/          # Headers
-├── iso/                  # ISO build files
-│   └── boot/             # Boot configuration
-├── scripts/              # Build scripts
-│   ├── build_iso.js     # ISO builder
-│   └── build_iso.sh     # Shell ISO builder
-└── dist/                 # Output directory
-    └── Adizilla-OS-1.0.0.iso
-```
+## Why QEMU first?
 
----
+ARM64 is an instruction-set family, not a guarantee that one image boots on every phone. A retail phone needs a device-specific boot chain, SoC configuration, device tree, display/input/storage/network/power drivers, and a recovery plan. The intended physical target must be selected and investigated before any image is flashed. No existing Android partition should be overwritten with an unverified build.
 
-## 📋 System Requirements
+## Roadmap
 
-### For Web Version
-- Modern web browser (Chrome, Firefox, Edge, Safari)
-- Node.js v14+
+### Kernel and hardware foundations
+- [x] AArch64 startup assembly and linker script
+- [x] PL011 serial input/output and basic command shell on QEMU `virt`
+- [ ] Exception vectors, timer interrupts and interrupt controller
+- [ ] RAM map discovery, page allocator, MMU and process isolation
+- [ ] Preemptive scheduler, processes/threads and system calls
+- [ ] Virtual filesystem, block storage and persistent settings
+- [ ] Device-tree parsing and a real device-specific boot target
 
-### For ISO/Hardware
-- x86_64 compatible processor
-- 512MB+ RAM
-- QEMU, VirtualBox, or real hardware
+### Mobile platform
+- [ ] Display/GPU composition, touchscreen and gestures
+- [ ] Battery, charging, thermal limits, suspend/resume and power management
+- [ ] Wi-Fi, cellular modem, Bluetooth, audio, camera, GPS and sensors
+- [ ] Secure boot/update integration and rollback/recovery
+- [ ] User-space service manager, permission model and application runtime
 
----
+### User experience and prototype feature carry-over
+These are product goals to implement on top of working kernel and user-space services, not claims that they already work in the kernel:
+- Launcher/home screen, task switcher, notifications and lock screen
+- File manager, settings, terminal, browser, text editor, calculator
+- Themes, accessibility, responsive motion, blur/shadows where hardware supports them
+- User accounts, permissions, audit logs, sandboxing and secure app installation
+- CPU/memory/storage/network/battery monitoring backed by actual device telemetry
+- Notes, tasks, calendar, timers and alarms
+- Weather, news, crypto prices, dictionary, currency conversion and NASA content as user-space network apps
+- AI assistant with explicit network/credential permissions
+- GitHub developer tools and safe terminal workflows
+- Optional Swahili/localization and region-specific service integrations where supported
 
-## 🔧 Available Commands
+Security items such as encryption, firewalling, intrusion detection, 2FA, vulnerability scanning and malware scanning must use real, reviewed implementations and be independently tested before being advertised as available.
 
-### Terminal Commands
-```
-bash
-help              # Show all commands
-ls                # List files
-cd                # Change directory
-mkdir             # Create directory
-rm                # Remove file/directory
-cat               # Read file
-touch             # Create file
-echo              # Write to file
-pwd               # Print working directory
-whoami            # Current user
-ps                # Process list
-kill              # Kill process
-ping              # Ping host
-clear             # Clear terminal
-history           # Command history
-alias             # Create command aliases
-piping            # command1 | command2
-```
+## Repository layout
 
-### Productivity Commands
-```
-bash
-weather <city>    # Get weather
-crypto <coin>     # Get crypto prices
-news              # Get latest news
-define <word>     # Dictionary lookup
-calc              # Calculator
-calendar          # Show calendar
-todo              # Task manager
-note              # Quick notes
-convert           # Currency conversion
-```
+- `kernel/arm64/`: new freestanding ARM64 kernel target
+- `kernel/` and `asm/`: older experimental code; not the new ARM64 kernel
+- `frontend/` and `backend/`: browser prototype and its supporting server
+- `scripts/`, `iso/`, and the checked-in legacy ISO: older experimental build path. Do not treat it as a verified phone image.
+- `docs/REAL_MOBILE_OS_PLAN.md`: architecture notes, honest status and milestone plan
 
----
+## Contribution rule
 
-## 🐛 Known Issues
-
-- Some APIs require API keys (add to .env)
-- ISO is basic - full kernel compilation requires cross-compiler
-- Some security features are demo-only
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Please submit a pull request or open an issue.
-
----
-
-## 📄 License
-
-MIT License - See LICENSE file for details.
-
----
-
-## 👏 Credits
-
-- **Creator**: Charis, Nairobi, Kenya 🇰🇪
-- **Built with**: Node.js, Express, Vanilla JS, C, Assembly
-- **Inspired by**: Chrome OS, Windows, Linux
-
----
-
-## 🔗 Links
-
-- [Website](#) (coming soon)
-- [Documentation](#) (coming soon)
-- [Discord](#) (coming soon)
-
----
-
-<p align="center">
-  <strong>Adizilla OS - The Future of Operating Systems 🇰🇪</strong>
-</p>
+Keep kernel code freestanding and low-level. UI and API-backed features belong in user space after the kernel provides the required services. Mark features as implemented only after they are exercised in emulation or on supported hardware.
