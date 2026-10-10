@@ -21,6 +21,9 @@
 #define INPUT_CAPACITY 96
 extern uint8_t exception_vectors[];
 static volatile uint64_t timer_ticks;
+static uint64_t l1_table[512] __attribute__((aligned(4096)));
+static uint64_t l2_low[512] __attribute__((aligned(4096)));
+static bool mmu_ready;
 static uint64_t timer_reload;
 static bool timer_ready;
 static void uart_putc(char c){if(c=='\n'){while(UART_FR&UART_FR_TXFF){}UART_DR='\r';}while(UART_FR&UART_FR_TXFF){}UART_DR=(uint32_t)c;}
@@ -30,6 +33,27 @@ static char uart_getc(void){while(UART_FR&UART_FR_RXFE){}return(char)(UART_DR&25
 static bool equal(const char*a,const char*b){while(*a&&*b&&*a==*b){a++;b++;}return !*a&&!*b;}
 static inline void dsb_sy(void){__asm__ volatile("dsb sy" ::: "memory");}
 static inline void isb(void){__asm__ volatile("isb" ::: "memory");}
+static void mmu_init(void){
+    for(unsigned i=0;i<512;i++){l1_table[i]=0;l2_low[i]=((uint64_t)i<<21)|(1ull<<10)|1ull;}
+    l1_table[0]=((uint64_t)(uintptr_t)l2_low&~0xfffull)|3ull;
+    /* Identity-map 1-4 GiB as normal, inner-shareable memory. QEMU RAM starts at 1 GiB. */
+    for(unsigned i=1;i<4;i++)l1_table[i]=((uint64_t)i<<30)|(1ull<<10)|(3ull<<8)|(1ull<<2)|1ull;
+    uint64_t mair=0xff00ull;
+    uint64_t tcr=25ull|(1ull<<8)|(1ull<<10)|(3ull<<12);
+    uint64_t ttbr=(uint64_t)(uintptr_t)l1_table;
+    __asm__ volatile("msr mair_el1, %0"::"r"(mair));
+    __asm__ volatile("msr tcr_el1, %0"::"r"(tcr));
+    __asm__ volatile("msr ttbr0_el1, %0"::"r"(ttbr));
+    dsb_sy(); isb();
+    __asm__ volatile("tlbi vmalle1" ::: "memory");
+    dsb_sy(); isb();
+    uint64_t sctlr;
+    __asm__ volatile("mrs %0, sctlr_el1":"=r"(sctlr));
+    sctlr|=(1ull<<0)|(1ull<<2)|(1ull<<12); /* MMU, data cache, instruction cache */
+    __asm__ volatile("msr sctlr_el1, %0"::"r"(sctlr):"memory");
+    isb();
+    mmu_ready=true;
+}
 static void timer_arm(void){__asm__ volatile("msr cntv_tval_el0, %0"::"r"(timer_reload));__asm__ volatile("msr cntv_ctl_el0, %0"::"r"((uint64_t)1));isb();}
 static void timer_init(void){
     uint64_t frequency;
@@ -60,11 +84,11 @@ static void help(void){uart_write_external("\nDedus kernel commands:\n  help    
 static void command(const char*s){
 if(equal(s,"help"))help();
 else if(equal(s,"uname"))uart_write_external("\nDedus Mobile OS kernel 0.4.0 (aarch64 / ARMv8-A)\n");
-else if(equal(s,"features")){uart_write_external("\nImplemented: AArch64 entry, EL2-to-EL1 normalization, BSS init, aligned EL1 exception vectors,");uart_write_external("\nPL011 UART, FDT RAM discovery, 4 KiB physical page allocator, GICv2 virtual timer IRQ, shell and panic diagnostics.\n");uart_write_external("Not implemented: MMU, scheduler, userspace, storage, display/touch, GPU, modem, Wi-Fi, audio, camera or phone-specific power management.\n");}
+else if(equal(s,"features")){uart_write_external("\nImplemented: AArch64 entry, EL2-to-EL1 normalization, BSS init, aligned EL1 exception vectors, MMU identity mapping and cache enablement,");uart_write_external("\nPL011 UART, FDT RAM discovery, 4 KiB physical page allocator, GICv2 virtual timer IRQ, shell and panic diagnostics.\n");uart_write_external("Not implemented: MMU, scheduler, userspace, storage, display/touch, GPU, modem, Wi-Fi, audio, camera or phone-specific power management.\n");}
 else if(equal(s,"meminfo"))memory_print_info();
 else if(equal(s,"memtest")){uart_write_external("\nPhysical page allocator self-test: ");uart_write_external(memory_self_test()?"PASS. Two distinct 4 KiB pages allocated and released; free-page count restored.\n":"FAIL. Check FDT RAM data and allocator initialization.\n");}
 else if(equal(s,"ticks")){uart_write_external("\nTimer IRQ count: ");uart_hex_external(timer_ticks);uart_write_external(timer_ready?" (timer enabled)\n":" (timer not initialized)\n");}
-else if(equal(s,"timer")){uint64_t ctl,tval,daif,freq;__asm__ volatile("mrs %0, cntv_ctl_el0":"=r"(ctl));__asm__ volatile("mrs %0, cntv_tval_el0":"=r"(tval));__asm__ volatile("mrs %0, daif":"=r"(daif));__asm__ volatile("mrs %0, cntfrq_el0":"=r"(freq));uart_write_external("\nGeneric virtual timer / GICv2 status: ");uart_write_external(timer_ready?"initialized; expected 10 IRQs/second\n":"NOT INITIALIZED\n");uart_write_external("CNTFRQ_EL0: ");uart_hex_external(freq);uart_write_external("\nCNTV_CTL_EL0: ");uart_hex_external(ctl);uart_write_external("\nCNTV_TVAL_EL0: ");uart_hex_external(tval);uart_write_external("\nDAIF: ");uart_hex_external(daif);uart_write_external("\nGICD_CTLR: ");uart_hex_external(GICD_CTLR);uart_write_external("\nGICC_CTLR: ");uart_hex_external(GICC_CTLR);uart_write_external("\nGICD_IGROUPR0: ");uart_hex_external(GICD_IGROUPR0);uart_write_external("\nGICD_ISENABLER0: ");uart_hex_external(GICD_ISENABLER0);uart_write_external("\n");}
+else if(equal(s,"mmu")){uint64_t sctlr;__asm__ volatile("mrs %0, sctlr_el1":"=r"(sctlr));uart_write_external("\\nMMU status: ");uart_write_external((sctlr&1u)?"enabled":"disabled");uart_write_external("\\nSCTLR_EL1: ");uart_hex_external(sctlr);uart_write_external(mmu_ready?"\\nIdentity map: 0-1 GiB device memory; 1-4 GiB normal memory\\n":"\\nIdentity map not initialized\\n");}\nelse if(equal(s,"timer")){uint64_t ctl,tval,daif,freq;__asm__ volatile("mrs %0, cntv_ctl_el0":"=r"(ctl));__asm__ volatile("mrs %0, cntv_tval_el0":"=r"(tval));__asm__ volatile("mrs %0, daif":"=r"(daif));__asm__ volatile("mrs %0, cntfrq_el0":"=r"(freq));uart_write_external("\nGeneric virtual timer / GICv2 status: ");uart_write_external(timer_ready?"initialized; expected 10 IRQs/second\n":"NOT INITIALIZED\n");uart_write_external("CNTFRQ_EL0: ");uart_hex_external(freq);uart_write_external("\nCNTV_CTL_EL0: ");uart_hex_external(ctl);uart_write_external("\nCNTV_TVAL_EL0: ");uart_hex_external(tval);uart_write_external("\nDAIF: ");uart_hex_external(daif);uart_write_external("\nGICD_CTLR: ");uart_hex_external(GICD_CTLR);uart_write_external("\nGICC_CTLR: ");uart_hex_external(GICC_CTLR);uart_write_external("\nGICD_IGROUPR0: ");uart_hex_external(GICD_IGROUPR0);uart_write_external("\nGICD_ISENABLER0: ");uart_hex_external(GICD_ISENABLER0);uart_write_external("\n");}
 else if(equal(s,"clear"))uart_write_external("\033[2J\033[H");
 else if(equal(s,"about")){uart_write_external("\nDedus is a freestanding ARM64 kernel targeting QEMU virt.");uart_write_external("\nIt is not yet installable on a retail phone. A phone port needs SoC-specific boot flow, device tree, drivers and verified recovery.\n");}
 else if(equal(s,"vectors")){uint64_t base,current;__asm__ volatile("mrs %0, vbar_el1":"=r"(base));__asm__ volatile("mrs %0, CurrentEL":"=r"(current));uart_write_external("\nCurrentEL: ");uart_hex_external(current);uart_write_external("\nVBAR_EL1: ");uart_hex_external(base);uart_write_external("\nVector table: ");uart_hex_external((uint64_t)(uintptr_t)exception_vectors);uart_write_external("\nVector base check: ");uart_write_external((base==(uint64_t)(uintptr_t)exception_vectors&&!(base&0x7ffu))?"PASS\n":"FAIL\n");}
@@ -72,4 +96,4 @@ else if(equal(s,"fault")){uart_write_external("\nTriggering intentional SVC exce
 else if(*s){uart_write_external("\nUnknown command: ");uart_write_external(s);uart_write_external("\nType 'help' for commands.\n");}
 }
 __attribute__((noreturn)) void exception_handler(uint64_t vector,uint64_t esr,uint64_t elr,uint64_t far){uart_write_external("\n\n*** DEDUS KERNEL EXCEPTION ***\nVector slot: ");uart_hex_external(vector);uart_write_external("\nESR_EL1: ");uart_hex_external(esr);uart_write_external("\nELR_EL1: ");uart_hex_external(elr);uart_write_external("\nFAR_EL1: ");uart_hex_external(far);uart_write_external("\nKernel halted to avoid unsafe exception return.\n");for(;;)__asm__ volatile("wfe");}
-void kernel_main(uint64_t dtb){char input[INPUT_CAPACITY];size_t used=0;uart_write_external("\n\n  DEDUS MOBILE OS | ARM64 KERNEL 0.4.0\n  -----------------------------------\n");uart_write_external("  Target: QEMU virt / ARMv8-A / GICv2.\n  EL1 exception vectors installed.\n");uart_write_external("  FDT argument: ");uart_hex_external(dtb);uart_write_external("\n");memory_init(dtb);uart_write_external(memory_is_ready()?"  Device-tree RAM map and 4 KiB page allocator ready.\n":"  RAM allocator unavailable; FDT absent or unusable.\n");timer_init();uart_write_external(timer_ready?"  Generic virtual timer IRQ and GICv2 initialized.\n":"  Generic virtual timer initialization failed.\n");uart_write_external("  Serial console ready. Type 'help'.\n\ndedus> ");for(;;){char ch=uart_getc();if(ch=='\r'||ch=='\n'){input[used]=0;command(input);used=0;uart_write_external("\ndedus> ");}else if(ch=='\b'||ch==0x7f){if(used){--used;uart_write_external("\b \b");}}else if(ch>=0x20&&ch<=0x7e){if(used+1<INPUT_CAPACITY){input[used++]=ch;uart_putc(ch);}else{uart_write_external("\nInput too long; command discarded.\ndedus> ");used=0;}}}}
+void kernel_main(uint64_t dtb){char input[INPUT_CAPACITY];size_t used=0;uart_write_external("\n\n  DEDUS MOBILE OS | ARM64 KERNEL 0.4.0\n  -----------------------------------\n");uart_write_external("  Target: QEMU virt / ARMv8-A / GICv2.\n  EL1 exception vectors installed.\n");uart_write_external("  FDT argument: ");uart_hex_external(dtb);uart_write_external("\n");memory_init(dtb);uart_write_external(memory_is_ready()?"  Device-tree RAM map and 4 KiB page allocator ready.\n":"  RAM allocator unavailable; FDT absent or unusable.\n");mmu_init();uart_write_external(mmu_ready?"  EL1 MMU and caches enabled with identity mappings.\\n":"  MMU initialization failed.\\n");timer_init();uart_write_external(timer_ready?"  Generic virtual timer IRQ and GICv2 initialized.\n":"  Generic virtual timer initialization failed.\n");uart_write_external("  Serial console ready. Type 'help'.\n\ndedus> ");for(;;){char ch=uart_getc();if(ch=='\r'||ch=='\n'){input[used]=0;command(input);used=0;uart_write_external("\ndedus> ");}else if(ch=='\b'||ch==0x7f){if(used){--used;uart_write_external("\b \b");}}else if(ch>=0x20&&ch<=0x7e){if(used+1<INPUT_CAPACITY){input[used++]=ch;uart_putc(ch);}else{uart_write_external("\nInput too long; command discarded.\ndedus> ");used=0;}}}}
