@@ -8,6 +8,7 @@
 #define UART_FR_RXFE (1u << 4)
 #define UART_FR_TXFF (1u << 5)
 #define INPUT_CAPACITY 96
+extern uint8_t exception_vectors[];
 static void uart_putc(char c){if(c=='\n'){while(UART_FR&UART_FR_TXFF){}UART_DR='\r';}while(UART_FR&UART_FR_TXFF){}UART_DR=(uint32_t)c;}
 void uart_write_external(const char*s){while(*s)uart_putc(*s++);}
 void uart_hex_external(uint64_t v){static const char d[]="0123456789abcdef";uart_write_external("0x");for(int i=60;i>=0;i-=4)uart_putc(d[(v>>i)&15u]);}
@@ -22,7 +23,7 @@ else if(equal(s,"meminfo"))memory_print_info();
 else if(equal(s,"memtest")){uart_write_external("\nPhysical page allocator self-test: ");uart_write_external(memory_self_test()?"PASS. Two distinct 4 KiB pages allocated and released; free-page count restored.\n":"FAIL. Check FDT RAM data and allocator initialization.\n");}
 else if(equal(s,"clear"))uart_write_external("\033[2J\033[H");
 else if(equal(s,"about")){uart_write_external("\nDedus is a freestanding ARM64 kernel targeting QEMU virt.");uart_write_external("\nIt is not yet installable on a retail phone. A phone port needs SoC-specific boot flow, device tree, drivers and verified recovery.\n");}
-else if(equal(s,"fault")){uart_write_external("\nTriggering intentional BRK exception; panic diagnostics should follow.\n");__asm__ volatile("brk #0");}
+else if(equal(s,"vectors")){uint64_t base;__asm__ volatile("mrs %0, vbar_el1":"=r"(base));uint64_t expected=(uint64_t)(uintptr_t)exception_vectors;uart_write_external("\\nVBAR_EL1: ");uart_hex_external(base);uart_write_external("\\nVector table: ");uart_hex_external(expected);uart_write_external("\\nVector base check: ");uart_write_external((base==expected&&!(base&0x7ffu))?"PASS\\n":"FAIL\\n");}\nelse if(equal(s,"fault")){uart_write_external("\nTriggering intentional BRK exception; panic diagnostics should follow.\n");__asm__ volatile("brk #0");}
 else if(*s){uart_write_external("\nUnknown command: ");uart_write_external(s);uart_write_external("\nType 'help' for commands.\n");}
 }
 __attribute__((noreturn)) void exception_handler(uint64_t vector,uint64_t esr,uint64_t elr,uint64_t far){uart_write_external("\n\n*** DEDUS KERNEL EXCEPTION ***\nVector slot: ");uart_hex_external(vector);uart_write_external("\nESR_EL1: ");uart_hex_external(esr);uart_write_external("\nELR_EL1: ");uart_hex_external(elr);uart_write_external("\nFAR_EL1: ");uart_hex_external(far);uart_write_external("\nKernel halted to avoid unsafe exception return.\n");for(;;)__asm__ volatile("wfe");}
