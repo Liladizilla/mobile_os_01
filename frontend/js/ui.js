@@ -1,4 +1,4 @@
-// Adizilla OS - UI Module
+// Dedus OS - UX prototype UI module
 // Handles window management, drag, resize, and user interface
 
 const UI = {
