@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: dedus-arm64-${{ github.ref }}
+  group: dedus-arm64-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 jobs:
   kernel-build-and-smoke-test:
