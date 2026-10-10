@@ -14,7 +14,8 @@ Dedus is a low-level ARM64 operating-system research project written in freestan
 | Bitmap-backed 4 KiB physical page allocator | Implemented; `memtest` verifies allocation and release |
 | EL1 exception vectors and panic diagnostics | Implemented and smoke-tested |
 | Generic virtual timer + GICv2 IRQ path | Implemented and CI-tested; `ticks` confirms interrupts are delivered |
-| EL1 MMU identity map and cache enablement | Implemented and CI-tested on QEMU; no process isolation or page permissions yet |\n| Scheduler, user space, filesystem, native graphics/input | Not implemented yet |
+| EL1 MMU identity map and cache enablement | Implemented and CI-tested on QEMU; no process isolation or page permissions yet |
+| Scheduler, user space, filesystem, native graphics/input | Not implemented yet |
 | Retail-phone boot support | Not implemented or verified |
 
 ## Build and run
