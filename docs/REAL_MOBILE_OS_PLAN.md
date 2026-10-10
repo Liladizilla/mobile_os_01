@@ -4,7 +4,7 @@
 
 The existing browser UI is a useful product prototype, not a phone operating system. The older C files use hosted-library calls such as `stdio`, `stdlib`, and `calloc`; the networking implementation simulates interfaces; and the old ISO scripts write a placeholder kernel image. Those pieces must not be represented as a functioning phone kernel.
 
-The new `kernel/arm64` target is a genuine low-level milestone: freestanding C plus AArch64 assembly, a linker script, direct PL011 UART hardware access, an interactive serial shell, EL2-to-EL1 normalization, BSS initialization, and an EL1 exception vector table with diagnostic panic output. It is intended to boot under QEMU's ARM `virt` machine. It does **not** yet boot on a retail phone.
+The new `kernel/arm64` target is a genuine low-level milestone: freestanding C plus AArch64 assembly, a linker script, direct PL011 UART hardware access, an interactive serial shell, EL2-to-EL1 normalization, BSS initialization, and an EL1 exception vector table with diagnostic panic output, flattened-device-tree RAM discovery, and a bitmap-backed 4 KiB physical page allocator with an allocation/free self-test. It is intended to boot under QEMU's ARM `virt` machine. It does **not** yet boot on a retail phone.
 
 ## Architecture
 
@@ -64,3 +64,12 @@ The existing `frontend/` is a clickable product prototype, not a native interfac
 - **Accessibility:** scalable text, high contrast, visible focus, screen-reader semantics, reduced motion and non-gesture alternatives.
 - **Security UX:** no default root/admin passwords in demos. Permissions must explain what they grant; privacy indicators must reflect real device services.
 - **Honest system state:** CPU/memory/storage/network/battery values must come from real telemetry. Simulated prototype values must be labelled.
+
+
+## Current memory milestone
+
+The kernel receives the flattened device tree pointer from the boot protocol, parses the FDT structure to discover the first RAM region, and reserves the kernel image and FDT pages. A bitmap tracks up to 1 GiB of 4 KiB pages. The `meminfo` command reports the discovered region and pool; `memtest` allocates two distinct pages, releases them, and verifies that free-page accounting returns to its starting value. This is an initial QEMU-targeted allocator, not yet a general multi-region physical memory manager.
+
+## UI/UX direction
+
+See [UX_PRINCIPLES.md](UX_PRINCIPLES.md). Dedus uses solid morphism: solid surfaces, crisp shadow outlines, restrained depth and optional blur. The browser prototype is not a native GUI. Touch/display drivers, a compositor, accessible input, and user-space services must exist before the design can become the actual phone interface.
