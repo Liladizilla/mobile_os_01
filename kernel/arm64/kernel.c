@@ -33,6 +33,10 @@ else if(equal(s,"vectors")){
     uart_write_external("\nVector table: "); uart_hex_external(expected);
     uart_write_external("\nVector base check: ");
     uart_write_external((base==expected&&!(base&0x7ffu))?"PASS\n":"FAIL\n");
+    volatile uint32_t *slot4=(volatile uint32_t *)(uintptr_t)(expected+0x200u);
+    uart_write_external("Slot 4 words: ");
+    for(unsigned i=0;i<5;i++){uart_hex_external(slot4[i]);uart_write_external(" ");}
+    uart_write_external("\n");
 }
 else if(equal(s,"fault")){uart_write_external("\nTriggering intentional SVC exception; panic diagnostics should follow.\n");__asm__ volatile("svc #0");}
 else if(*s){uart_write_external("\nUnknown command: ");uart_write_external(s);uart_write_external("\nType 'help' for commands.\n");}
