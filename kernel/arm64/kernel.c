@@ -23,6 +23,11 @@ extern uint8_t exception_vectors[];
 static volatile uint64_t timer_ticks;
 static uint64_t l1_table[512] __attribute__((aligned(4096)));
 static uint64_t l2_low[512] __attribute__((aligned(4096)));
+static uint64_t l2_ram[512] __attribute__((aligned(4096)));
+static uint64_t l3_kernel[4][512] __attribute__((aligned(4096)));
+extern char __kernel_start[], __kernel_end[], __text_start[], __text_end[];
+extern char __vectors_start[], __vectors_end[], __rodata_start[], __rodata_end[];
+extern char __data_start[], __data_end[], __bss_start[], __bss_end[];
 static bool mmu_ready;
 static uint64_t timer_reload;
 static bool timer_ready;
@@ -33,11 +38,47 @@ static char uart_getc(void){while(UART_FR&UART_FR_RXFE){}return(char)(UART_DR&25
 static bool equal(const char*a,const char*b){while(*a&&*b&&*a==*b){a++;b++;}return !*a&&!*b;}
 static inline void dsb_sy(void){__asm__ volatile("dsb sy" ::: "memory");}
 static inline void isb(void){__asm__ volatile("isb" ::: "memory");}
+static bool page_intersects(uint64_t page, const char *start, const char *end){
+    uint64_t a=(uint64_t)(uintptr_t)start,b=(uint64_t)(uintptr_t)end;
+    return b>a && page<b && page+4096u>a;
+}
+static uint64_t normal_block(uint64_t physical){
+    return physical|(1ull<<10)|(3ull<<8)|(1ull<<2)|(1ull<<53)|(1ull<<54)|1ull;
+}
+static uint64_t normal_page(uint64_t physical, bool executable, bool read_only){
+    uint64_t d=physical|(1ull<<10)|(3ull<<8)|(1ull<<2)|3ull;
+    if(read_only)d|=(1ull<<7);
+    if(!executable)d|=(1ull<<53)|(1ull<<54);
+    return d;
+}
 static void mmu_init(void){
-    for(unsigned i=0;i<512;i++){l1_table[i]=0;l2_low[i]=((uint64_t)i<<21)|(1ull<<10)|1ull;}
+    for(unsigned i=0;i<512;i++){
+        l1_table[i]=0;
+        l2_low[i]=((uint64_t)i<<21)|(1ull<<10)|(1ull<<53)|(1ull<<54)|1ull;
+        l2_ram[i]=normal_block(0x40000000ull+((uint64_t)i<<21));
+    }
+    for(unsigned t=0;t<4;t++)for(unsigned p=0;p<512;p++)l3_kernel[t][p]=0;
     l1_table[0]=((uint64_t)(uintptr_t)l2_low&~0xfffull)|3ull;
-    /* Identity-map 1-4 GiB as normal, inner-shareable memory. QEMU RAM starts at 1 GiB. */
-    for(unsigned i=1;i<4;i++)l1_table[i]=((uint64_t)i<<30)|(1ull<<10)|(3ull<<8)|(1ull<<2)|1ull;
+    l1_table[1]=((uint64_t)(uintptr_t)l2_ram&~0xfffull)|3ull;
+    l1_table[2]=normal_block(0x80000000ull);
+    l1_table[3]=normal_block(0xc0000000ull);
+    uint64_t kstart=(uint64_t)(uintptr_t)__kernel_start;
+    uint64_t kend=(uint64_t)(uintptr_t)__kernel_end;
+    if(kend<=kstart || kend-kstart>8u*1024u*1024u)return;
+    unsigned first=(unsigned)((kstart-0x40000000ull)>>21);
+    unsigned last=(unsigned)((kend-1u-0x40000000ull)>>21);
+    if(last>=4u)return;
+    for(unsigned block=first;block<=last;block++){
+        uint64_t base=0x40000000ull+((uint64_t)block<<21);
+        for(unsigned p=0;p<512;p++){
+            uint64_t page=base+((uint64_t)p<<12);
+            bool code=page_intersects(page,__text_start,__text_end)||page_intersects(page,__vectors_start,__vectors_end);
+            bool rodata=page_intersects(page,__rodata_start,__rodata_end);
+            bool ro=code||rodata;
+            l3_kernel[block][p]=normal_page(page,code,ro);
+        }
+        l2_ram[block]=((uint64_t)(uintptr_t)l3_kernel[block]&~0xfffull)|3ull;
+    }
     uint64_t mair=0xff00ull;
     uint64_t tcr=25ull|(1ull<<8)|(1ull<<10)|(3ull<<12);
     uint64_t ttbr=(uint64_t)(uintptr_t)l1_table;
@@ -49,7 +90,7 @@ static void mmu_init(void){
     dsb_sy(); isb();
     uint64_t sctlr;
     __asm__ volatile("mrs %0, sctlr_el1":"=r"(sctlr));
-    sctlr|=(1ull<<0)|(1ull<<2)|(1ull<<12); /* MMU, data cache, instruction cache */
+    sctlr|=(1ull<<0)|(1ull<<2)|(1ull<<12);
     __asm__ volatile("msr sctlr_el1, %0"::"r"(sctlr):"memory");
     isb();
     mmu_ready=true;
