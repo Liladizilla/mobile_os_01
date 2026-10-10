@@ -34,6 +34,7 @@ bool vm_self_test(void){
     root[64]=(l2_pa&~(PAGE_SIZE-1u))|DESC_VALID_TABLE;
     l2[0]=(l3_pa&~(PAGE_SIZE-1u))|DESC_VALID_TABLE;
     l3[0]=(data_pa&~(PAGE_SIZE-1u))|DESC_AF|DESC_SH_INNER|DESC_ATTR_NORMAL|DESC_AP_EL0_RW|DESC_PXN|DESC_UXN|DESC_VALID_TABLE;
+    bool flags_ok=(l3[0]&(3ull<<6))==DESC_AP_EL0_RW&&(l3[0]&DESC_PXN)&&(l3[0]&DESC_UXN);
     mmu_switch_root(root_pa);
     volatile uint64_t*user=(volatile uint64_t*)(uintptr_t)USER_TEST_VA;
     user[0]=0xded05a11ull;
@@ -44,5 +45,5 @@ bool vm_self_test(void){
     bool freed_l3=memory_free_page(l3_pa);
     bool freed_l2=memory_free_page(l2_pa);
     bool freed_root=memory_free_page(root_pa);
-    return valid&&freed_data&&freed_l3&&freed_l2&&freed_root;
+    return valid&&flags_ok&&freed_data&&freed_l3&&freed_l2&&freed_root;
 }
