@@ -3,13 +3,13 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 QEMU="${QEMU:-qemu-system-aarch64}"
 CROSS_COMPILE="${CROSS_COMPILE:-aarch64-linux-gnu-}"
-IMAGE="$ROOT/kernel/arm64/build/dedus.elf"
+IMAGE="$ROOT/kernel/arm64/build/dedus.bin"
 LOG="$(mktemp)"
 trap 'rm -f "$LOG"' EXIT
 make -C "$ROOT/kernel/arm64" CROSS_COMPILE="$CROSS_COMPILE" all >/dev/null
 command -v "$QEMU" >/dev/null || { echo "Missing QEMU executable: $QEMU" >&2; exit 1; }
 set +e
-printf 'help\nuname\nfeatures\nmeminfo\nmemtest\nabout\nfault\n' | timeout 10s "$QEMU" -machine virt -cpu cortex-a53 -m 256M -nographic -monitor none -kernel "$IMAGE" >"$LOG" 2>&1
+(sleep 1; printf 'help\nuname\nfeatures\nmeminfo\nmemtest\nabout\nfault\n') | timeout 12s "$QEMU" -machine virt -cpu cortex-a53 -m 256M -nographic -monitor none -kernel "$IMAGE" >"$LOG" 2>&1
 status=$?
 set -e
 if [ "$status" -ne 124 ] && [ "$status" -ne 0 ]; then cat "$LOG"; echo "QEMU exited unexpectedly with status $status" >&2; exit "$status"; fi
