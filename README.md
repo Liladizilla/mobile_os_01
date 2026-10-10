@@ -9,9 +9,9 @@ Dedus is being rebuilt as a **real low-level ARM64 operating system project**. T
 | Freestanding ARM64 kernel | Initial implementation in `kernel/arm64/` |
 | AArch64 assembly entry point and linker layout | Implemented for the QEMU `virt` board |
 | PL011 UART console | Implemented |
-| Interactive serial command loop | Implemented |
+| Interactive serial command loop | Implemented |\n| FDT RAM discovery and 4 KiB page allocator | Implemented for QEMU `virt`; covered by `memtest` |\n| EL1 exception diagnostics | Implemented; deliberate `fault` command exercises the handler |
 | QEMU boot / physical phone boot | QEMU target is the first test target; retail phone boot is **not implemented or verified** |
-| MMU, real scheduler, userspace, storage, touchscreen, GPU, Wi-Fi, modem, camera, audio, power management | Roadmap |
+| MMU, timer/GIC interrupts, scheduler, userspace, storage, touchscreen, GPU, Wi-Fi, modem, camera, audio, power management | Roadmap |
 | Browser UI and built-in app mockups | Legacy prototype, not kernel services |
 
 ## Build the real ARM64 kernel
@@ -77,7 +77,7 @@ Security items such as encryption, firewalling, intrusion detection, 2FA, vulner
 - `kernel/` and `asm/`: older experimental code; not the new ARM64 kernel
 - `frontend/` and `backend/`: browser prototype and its supporting server
 - `scripts/`, `iso/`, and the checked-in legacy ISO: older experimental build path. Do not treat it as a verified phone image.
-- `docs/REAL_MOBILE_OS_PLAN.md`: architecture notes, honest status and milestone plan
+- `docs/REAL_MOBILE_OS_PLAN.md`: architecture notes, honest status and milestone plan\n- `docs/UX_PRINCIPLES.md`: solid-morphism mobile UX direction and accessibility/performance constraints
 
 ## Contribution rule
 
