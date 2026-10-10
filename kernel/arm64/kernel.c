@@ -36,14 +36,14 @@ static void timer_init(void){
     __asm__ volatile("mrs %0, cntfrq_el0":"=r"(frequency));
     if(frequency<100u)return;
     timer_reload=frequency/10u;
-    /* QEMU virt with GICv2: route the EL1 virtual timer as Group 1. */
+    /* QEMU virt with GICv2: use Group 0 for the EL1 virtual timer in this boot security state. */
     GICD_CTLR=0;
-    GICD_IGROUPR0|=(1u<<TIMER_IRQ_ID);
+    GICD_IGROUPR0&=~(1u<<TIMER_IRQ_ID);
     GICD_IPRIORITYR27=0x80;
     GICD_ISENABLER0=(1u<<TIMER_IRQ_ID);
     GICC_PMR=0xff;
-    GICC_CTLR=3;
-    GICD_CTLR=3;
+    GICC_CTLR=1;
+    GICD_CTLR=1;
     dsb_sy();
     timer_arm();
     timer_ready=true;
