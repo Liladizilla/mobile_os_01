@@ -9,7 +9,7 @@
     mrs x2, elr_el1
     mrs x3, far_el1
     b exception_handler
-    .space 112
+    .space 108
 .endm
 exception_vectors:
     VECTOR 0
