@@ -1,0 +1,51 @@
+# Adizilla Mobile OS: real-kernel plan
+
+## Truth about the current repository
+
+The existing browser UI is a useful product prototype, not a phone operating system. The older C files use hosted-library calls such as `stdio`, `stdlib`, and `calloc`; the networking implementation simulates interfaces; and the old ISO scripts write a placeholder kernel image. Those pieces must not be represented as a functioning phone kernel.
+
+The new `kernel/arm64` target is the first genuine low-level milestone: freestanding C plus AArch64 assembly, a linker script, direct PL011 UART hardware access, and an interactive serial shell. It is intended to boot under QEMU's ARM `virt` machine. It does **not** yet boot on a retail phone.
+
+## Architecture
+
+- **Kernel language:** C for kernel subsystems, AArch64 assembly for entry/exception-sensitive code.
+- **Initial execution target:** QEMU `virt`, ARMv8-A, PL011 UART.
+- **Build:** `aarch64-none-elf-gcc` and GNU binutils.
+- **Emulation:** `qemu-system-aarch64`.
+- **Phone target:** not selected yet. A production phone port needs an exact model, SoC, boot chain, device tree, and driver support. The user's Samsung Galaxy M04 is a MediaTek device; support cannot be inferred from a generic ARM64 build.
+
+## Build and run
+
+Install an AArch64 bare-metal GCC/binutils toolchain and QEMU system emulator, then run:
+
+```sh
+make arm64
+make run-arm64
+```
+
+Or directly:
+
+```sh
+make -C kernel/arm64
+make -C kernel/arm64 run
+```
+
+QEMU opens a serial console. Type `help`, `uname`, `features`, `clear`, or `about`.
+
+## Roadmap
+
+1. **Bootable ARM64 kernel (current milestone):** startup assembly, linker layout, UART output/input, simple serial shell.
+2. **Platform foundations:** exception vectors, timer interrupts, GIC handling, memory map discovery, page allocator, MMU and isolation.
+3. **Kernel services:** preemptive scheduling, process/thread model, syscalls, virtual filesystem, block storage driver.
+4. **Mobile platform:** device-tree parsing, display pipeline, input/touch, battery/charging, suspend/resume, audio, Wi-Fi, modem and sensors.
+5. **User environment:** secure init/service manager, permissions, app packaging/runtime, notifications, settings, launcher, file manager, accessibility, theme and visual effects.
+6. **Retain prototype features as services/apps:** terminal, notes, calculator, calendar, task manager, weather/news/crypto clients, AI assistant, telemetry dashboards, multi-user sessions and audit tools. Network-backed/API features belong in user-space apps, not the kernel.
+7. **Security:** verified boot integration, memory/process isolation, capability/permission model, secure update path, encryption using vetted libraries, sandboxing and audit logging. Never claim a firewall, intrusion detection, 2FA, encryption, or malware scanner is implemented until it is tested and real.
+8. **Device port and validation:** choose a supported device and boot chain; document recovery/rollback; test on emulation first and never flash an unverified image to a daily-use phone.
+
+## Non-goals for this milestone
+
+- No TypeScript/JavaScript in the kernel.
+- No claim that the current ISO installs on a phone.
+- No fake CPU/RAM/network metrics or simulated devices presented as hardware telemetry.
+- No overwriting Android partitions or flashing instructions until a device-specific port is proven and recoverable.
