@@ -105,6 +105,8 @@ uint64_t memory_alloc_page(void){
 }
 bool memory_free_page(uint64_t address){
     if(!ready||(address&(PAGE_SIZE-1u))||address<pool_start||address>=pool_end)return false;
+    uint64_t fdt_end=align_up(fdt_addr+fdt_size);
+    if(address<fdt_end&&address+PAGE_SIZE>align_down(fdt_addr))return false;
     uint32_t i=(uint32_t)((address-pool_start)/PAGE_SIZE);
     if(!is_used(i))return false;
     set_used(i,false);free_count++;return true;
