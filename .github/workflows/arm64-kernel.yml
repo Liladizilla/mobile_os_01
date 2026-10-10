@@ -32,7 +32,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dedus-arm64-qemu-${{ github.sha }}
-          path: |\n            kernel/arm64/build/dedus.elf\n            kernel/arm64/build/dedus.bin
+          path: |
+            kernel/arm64/build/dedus.elf
+            kernel/arm64/build/dedus.bin
           if-no-files-found: error
           retention-days: 14
   prototype-quality:
