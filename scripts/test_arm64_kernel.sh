@@ -9,11 +9,11 @@ trap 'rm -f "$LOG"' EXIT
 make -C "$ROOT/kernel/arm64" CROSS_COMPILE="$CROSS_COMPILE" all >/dev/null
 command -v "$QEMU" >/dev/null || { echo "Missing QEMU executable: $QEMU" >&2; exit 1; }
 set +e
-(sleep 1; printf 'help\nuname\nfeatures\nmeminfo\nmemtest\nabout\nvectors\nfault\n') | timeout 12s "$QEMU" -machine virt -cpu cortex-a53 -m 256M -nographic -monitor none -kernel "$IMAGE" >"$LOG" 2>&1
+(sleep 1; printf 'help\nuname\nfeatures\nmeminfo\nmemtest\nabout\nvectors\nfault\n') | timeout 12s "$QEMU" -machine virt,gic-version=2 -cpu cortex-a53 -m 256M -nographic -monitor none -kernel "$IMAGE" >"$LOG" 2>&1
 status=$?
 set -e
 if [ "$status" -ne 124 ] && [ "$status" -ne 0 ]; then cat "$LOG"; echo "QEMU exited unexpectedly with status $status" >&2; exit "$status"; fi
-for expected in 'DEDUS MOBILE OS' 'Dedus Mobile OS kernel 0.3.0' 'EL1 exception vectors installed' 'FDT RAM discovery' 'Dedus physical memory report' 'Physical page allocator self-test: PASS' 'not yet installable on a retail phone' 'Vector base check: PASS' 'DEDUS KERNEL EXCEPTION' 'ESR_EL1:'; do
+for expected in 'DEDUS MOBILE OS' 'Dedus Mobile OS kernel 0.4.0' 'EL1 exception vectors installed' 'FDT RAM discovery' 'Dedus physical memory report' 'Physical page allocator self-test: PASS' 'Generic timer IRQ and GICv2 initialized' 'Timer IRQ count: 0x000000000000000' 'not yet installable on a retail phone' 'Vector base check: PASS' 'DEDUS KERNEL EXCEPTION' 'ESR_EL1:'; do
   if ! grep -q "$expected" "$LOG"; then cat "$LOG"; echo "Smoke test failed: expected output not found: $expected" >&2; exit 1; fi
 done
 echo "Dedus ARM64 smoke test passed: boot, FDT RAM discovery, page allocation/free, shell and exception diagnostics."
