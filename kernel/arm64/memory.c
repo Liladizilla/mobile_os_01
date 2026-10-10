@@ -75,8 +75,11 @@ static bool parse_fdt(uint64_t addr){
 static void set_used(uint32_t i,bool value){uint8_t mask=(uint8_t)(1u<<(i&7u));if(value)bitmap[i>>3]|=mask;else bitmap[i>>3]&=(uint8_t)~mask;}
 static bool is_used(uint32_t i){return(bitmap[i>>3]&(uint8_t)(1u<<(i&7u)))!=0;}
 void memory_init(uint64_t fdt){
+    put(" [mem:init] start\\n");
     for(uint32_t i=0;i<BITMAP_SIZE;i++)bitmap[i]=0xffu;
-    if(!parse_fdt(fdt))return;
+    put(" [mem:init] bitmap ready; parsing FDT\\n");
+    if(!parse_fdt(fdt)){put(" [mem:init] FDT parse failed\\n");return;}
+    put(" [mem:init] FDT parse returned\\n");
     uint64_t end=ram_base+ram_size;
     if(end<ram_base)return;
     uint64_t start=align_up(ram_base),kernel_end=align_up((uint64_t)(uintptr_t)__kernel_end);
@@ -93,6 +96,7 @@ void memory_init(uint64_t fdt){
         if(!reserved)free_count++;
     }
     ready=free_count>0;
+    put(" [mem:init] allocator initialized\\n");
 }
 bool memory_is_ready(void){return ready;}
 static uint64_t allocate_page(void){
