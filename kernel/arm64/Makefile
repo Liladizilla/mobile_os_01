@@ -26,6 +26,6 @@ $(IMAGE): $(TARGET)
 	$(OBJCOPY) -O binary $< $@
 	@echo "Built QEMU raw kernel image: $(IMAGE)"
 run: $(IMAGE)
-	$(QEMU) -machine virt -cpu cortex-a53 -m 256M -nographic -monitor none -kernel $(IMAGE)
+	$(QEMU) -machine virt,gic-version=2 -cpu cortex-a53 -m 256M -nographic -monitor none -kernel $(IMAGE)
 clean:
 	rm -rf $(BUILD)
