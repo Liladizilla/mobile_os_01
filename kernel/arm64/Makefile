@@ -5,7 +5,7 @@ QEMU ?= qemu-system-aarch64
 BUILD := build
 TARGET := $(BUILD)/dedus.elf
 IMAGE := $(BUILD)/dedus.bin
-CFLAGS := -I../include -mcpu=cortex-a53 -ffreestanding -fno-builtin -fno-stack-protector -fno-pic -fno-pie -nostdlib -nostartfiles -Wall -Wextra -O2
+CFLAGS := -I../include -mcpu=cortex-a53 -mgeneral-regs-only -fno-tree-vectorize -ffreestanding -fno-builtin -fno-stack-protector -fno-pic -fno-pie -nostdlib -nostartfiles -Wall -Wextra -O2
 LDFLAGS := -T linker.ld -nostdlib -Wl,--build-id=none -Wl,-Map,$(BUILD)/dedus.map
 .PHONY: all run clean
 all: $(TARGET) $(IMAGE)
