@@ -118,6 +118,17 @@ static void timer_init(void){
     __asm__ volatile("msr daifclr, #2" ::: "memory");
     isb();
 }
+void timer_pause(void){__asm__ volatile("msr cntv_ctl_el0, %0"::"r"((uint64_t)3));isb();}
+void timer_resume(void){timer_arm();__asm__ volatile("msr daifclr, #2" ::: "memory");isb();}
+struct syscall_frame{uint64_t x[31];uint64_t elr,spsr,esr;};
+extern void user_returned(void);
+void syscall_handler(struct syscall_frame*f){
+    uint64_t ec=(f->esr>>26)&0x3fu;
+    if(ec!=0x15u){f->x[0]=~0ull;return;}
+    if(f->x[8]==1u)f->x[0]=0x44454455535f4f4bull;
+    else if(f->x[8]==2u){f->x[0]=0;f->spsr=0x3c5ull;f->elr=(uint64_t)(uintptr_t)user_returned;}
+    else f->x[0]=~37ull;
+}
 void timer_irq_handler(void){
     uint32_t iar=GICC_IAR;
     uint32_t id=iar&0x3ffu;
