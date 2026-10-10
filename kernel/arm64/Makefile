@@ -15,12 +15,14 @@ $(BUILD)/boot.o: boot.S | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD)/vectors.o: vectors.S | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD)/kernel.o: kernel.c ../include/memory.h | $(BUILD)
+$(BUILD)/kernel.o: kernel.c ../include/memory.h ../include/vm.h | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD)/memory.o: memory.c ../include/memory.h | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
-$(TARGET): $(BUILD)/boot.o $(BUILD)/vectors.o $(BUILD)/kernel.o $(BUILD)/memory.o linker.ld
-	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD)/boot.o $(BUILD)/vectors.o $(BUILD)/kernel.o $(BUILD)/memory.o -o $@
+$(BUILD)/vm.o: vm.c ../include/memory.h ../include/vm.h | $(BUILD)
+	$(CC) $(CFLAGS) -c $< -o $@
+$(TARGET): $(BUILD)/boot.o $(BUILD)/vectors.o $(BUILD)/kernel.o $(BUILD)/memory.o $(BUILD)/vm.o linker.ld
+	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD)/boot.o $(BUILD)/vectors.o $(BUILD)/kernel.o $(BUILD)/memory.o $(BUILD)/vm.o -o $@
 	@echo "Built Dedus freestanding ARM64 ELF: $(TARGET)"
 $(IMAGE): $(TARGET)
 	$(OBJCOPY) -O binary $< $@
