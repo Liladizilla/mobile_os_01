@@ -121,7 +121,7 @@ void timer_irq_handler(void){
     if(id==TIMER_IRQ_ID){timer_ticks++;timer_arm();}
     if(id<1020u){dsb_sy();GICC_EOIR=iar;dsb_sy();}
 }
-static void help(void){uart_write_external("\nDedus kernel commands:\n  help      Show commands\n  uname     Kernel and architecture\n  features  Implemented kernel foundations\n  meminfo   Device-tree RAM and allocator report\n  memtest   Allocate/free two pages and verify accounting\n  ticks     Show generic timer interrupt count\n  timer     Timer/GIC initialization status\n  mmu       MMU and cache status\n  clear     Clear terminal\n  about     Explain this target\n  vectors   Verify exception vector base/alignment\n  fault     Trigger exception-handler test\n");}
+static void help(void){uart_write_external("\nDedus kernel commands:\n  help      Show commands\n  uname     Kernel and architecture\n  features  Implemented kernel foundations\n  meminfo   Device-tree RAM and allocator report\n  memtest   Allocate/free two pages and verify accounting\n  ticks     Show generic timer interrupt count\n  timer     Timer/GIC initialization status\n  mmu       MMU and cache status\n  clear     Clear terminal\n  about     Explain this target\n  vectors   Verify exception vector base/alignment\n  fault     Trigger exception-handler test\n  protectfault Attempt write to read-only kernel text (expected fault)\n");}
 static void command(const char*s){
 if(equal(s,"help"))help();
 else if(equal(s,"uname"))uart_write_external("\nDedus Mobile OS kernel 0.4.0 (aarch64 / ARMv8-A)\n");
