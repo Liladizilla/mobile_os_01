@@ -42,8 +42,8 @@ static void timer_init(void){
     GICD_IPRIORITYR27=0x80;
     GICD_ISENABLER0=(1u<<TIMER_IRQ_ID);
     GICC_PMR=0xff;
-    GICC_CTLR=1;
-    GICD_CTLR=1;
+    GICC_CTLR=3;
+    GICD_CTLR=3;
     dsb_sy();
     timer_arm();
     timer_ready=true;
