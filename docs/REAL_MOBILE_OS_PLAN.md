@@ -73,3 +73,10 @@ The kernel receives the flattened device tree pointer from the boot protocol, pa
 ## UI/UX direction
 
 See [UX_PRINCIPLES.md](UX_PRINCIPLES.md). Dedus uses solid morphism: solid surfaces, crisp shadow outlines, restrained depth and optional blur. The browser prototype is not a native GUI. Touch/display drivers, a compositor, accessible input, and user-space services must exist before the design can become the actual phone interface.
+
+
+## Timer interrupt milestone (QEMU only)
+
+The ARM64 target now configures the QEMU `virt` board's GICv2 and EL1 virtual generic timer. A dedicated IRQ vector saves and restores general-purpose registers, acknowledges the interrupt, increments a kernel tick counter, rearms the timer, and completes the GIC interrupt. The `timer` command exposes timer/GIC registers for bring-up diagnostics; `ticks` reports the delivered interrupt count. CI requires the count to advance before it uploads the ELF and raw kernel artifacts.
+
+This is not yet a scheduler clock or a phone-portable interrupt controller abstraction. Before relying on it for preemption, add exception-frame tests, timer drift/overflow handling, interrupt-controller abstraction, and tests for repeated IRQ entry/exit. The current target is specifically QEMU `virt` with GICv2.
