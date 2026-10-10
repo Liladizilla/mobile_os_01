@@ -1,4 +1,4 @@
-# Adizilla Mobile OS: real-kernel plan
+# Dedus Mobile OS: real-kernel plan
 
 ## Truth about the current repository
 
@@ -35,13 +35,15 @@ QEMU opens a serial console. Type `help`, `uname`, `features`, `clear`, or `abou
 ## Roadmap
 
 1. **Bootable ARM64 kernel:** startup assembly, linker layout, UART input/output, serial shell, BSS initialization and exception diagnostics.
-2. **Memory and interrupt foundations:** parse the QEMU device tree, build a physical memory map, implement a page-frame allocator, set up the generic timer and GICv2/v3, then enable controlled interrupts. Add MMU mappings and isolation only after memory ownership is tested.
-3. **Kernel services:** preemptive scheduling, process/thread model, syscalls, virtual filesystem and block storage driver.
-4. **Mobile platform:** device-tree parsing for a chosen device, display pipeline, input/touch, battery/charging, suspend/resume, audio, Wi-Fi, modem and sensors.
-5. **User environment:** secure init/service manager, permissions, app packaging/runtime, notifications, settings, launcher, file manager, accessibility, theme and visual effects.
-6. **Retain prototype features as services/apps:** terminal, notes, calculator, calendar, task manager, weather/news/crypto clients, AI assistant, telemetry dashboards, multi-user sessions and audit tools. Network-backed/API features belong in user-space apps, not the kernel.
-7. **Security:** verified boot integration, memory/process isolation, capability/permission model, secure update path, encryption using vetted libraries, sandboxing and audit logging. Never claim a firewall, intrusion detection, 2FA, encryption, or malware scanner is implemented until it is tested and real.
-8. **Device port and validation:** choose a supported device and boot chain; document recovery/rollback; test on emulation first and never flash an unverified image to a daily-use phone.
+2. **Memory foundations:** parse the QEMU device tree, discover RAM, reserve kernel/FDT pages, and test a 4 KiB physical page allocator.
+3. **Interrupt foundations:** configure the generic timer and GICv2/v3, then enable controlled interrupts.
+4. **Virtual memory and isolation:** add MMU mappings only after memory ownership is tested.
+5. **Kernel services:** preemptive scheduling, process/thread model, syscalls, virtual filesystem and block storage driver.
+6. **Mobile platform:** device-tree parsing for a chosen device, display pipeline, input/touch, battery/charging, suspend/resume, audio, Wi-Fi, modem and sensors.
+7. **User environment:** secure init/service manager, permissions, app packaging/runtime, notifications, settings, launcher, file manager, accessibility, theme and visual effects.
+8. **Retain prototype features as services/apps:** terminal, notes, calculator, calendar, task manager, weather/news/crypto clients, AI assistant, telemetry dashboards, multi-user sessions and audit tools. Network-backed/API features belong in user-space apps, not the kernel.
+9. **Security:** verified boot integration, memory/process isolation, capability/permission model, secure update path, encryption using vetted libraries, sandboxing and audit logging. Never claim a firewall, intrusion detection, 2FA, encryption, or malware scanner is implemented until it is tested and real.
+10. **Device port and validation:** choose a supported device and boot chain; document recovery/rollback; test on emulation first and never flash an unverified image to a daily-use phone.
 
 ## Non-goals for this milestone
 
@@ -49,3 +51,16 @@ QEMU opens a serial console. Type `help`, `uname`, `features`, `clear`, or `abou
 - No claim that the current ISO installs on a phone.
 - No fake CPU/RAM/network metrics or simulated devices presented as hardware telemetry.
 - No overwriting Android partitions or flashing instructions until a device-specific port is proven and recoverable.
+
+
+## UI/UX principles for Dedus
+
+The existing `frontend/` is a clickable product prototype, not a native interface running on the kernel. Keep it as a design sandbox until graphics, input, scheduling and user-space services exist.
+
+- **Design language:** solid morphism: solid surfaces, crisp shadow outlines, restrained depth and consistent spacing/type. Blur is optional, never required for legibility.
+- **Mobile-first ergonomics:** thumb-reachable primary actions, large touch targets, edge-safe layouts, one-handed navigation, and predictable Back/Home/Recents behavior.
+- **Information hierarchy:** home, app switcher, notifications/quick settings, lock screen, settings and file manager each need one clear primary task. Avoid dashboard clutter and fake system metrics.
+- **Performance tiers:** solid-color/software fallback first; blur, live wallpaper and complex shadows only when the compositor can sustain them. Reduce effects before responsiveness.
+- **Accessibility:** scalable text, high contrast, visible focus, screen-reader semantics, reduced motion and non-gesture alternatives.
+- **Security UX:** no default root/admin passwords in demos. Permissions must explain what they grant; privacy indicators must reflect real device services.
+- **Honest system state:** CPU/memory/storage/network/battery values must come from real telemetry. Simulated prototype values must be labelled.
